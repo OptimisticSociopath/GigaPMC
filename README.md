@@ -1,4 +1,4 @@
-# GigaPMC - For Tarkov Enjoyers v1.0.0 — P10 CLEAN REBRAND
+# GigaPMC - For Tarkov Enjoyers v1.0.0
 
 Author: Vargor / OptimisticSociopath
 Target: SPT 4.1.6; Fika backend support is experimental (no completed real two-player raid test).
