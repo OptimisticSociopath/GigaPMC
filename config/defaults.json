@@ -1,0 +1,8 @@
+{
+  "Enabled": true,
+  "BonusHpPerLevel": 1,
+  "BonusHpEvery10Levels": 5,
+  "BonusHpAtMaxLevel": 12,
+  "BonusHpPerPrestige": 5,
+  "MaxPmcLevel": 79
+}

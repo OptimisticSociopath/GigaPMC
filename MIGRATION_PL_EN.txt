@@ -1,0 +1,36 @@
+GigaPMC v1.0.0 | CLEAN REBRAND | MIGRATION / MIGRACJA
+
+POLSKI
+1. Zamknij grę i serwer SPT/Fika. Wykonaj pełny backup profili i starych DLL/konfiguracji.
+2. Zapisz kopię katalogu: SPT_Runtime\user\mods\PmcVitalityLevels (jeżeli istnieje).
+3. Zachowaj kopię starej konfiguracji F12: BepInEx\config\com.igor.pmcvitalitylevels.client.cfg
+   (może nie istnieć lub mieć inną lokalizację; najpierw sprawdź stan na komputerze).
+4. NOWA nazwa folderu serwera: SPT_Runtime\user\mods\GigaPMC.
+   Jeżeli masz osobisty plik PmcVitalityLevels\config\f12-overrides.json, skopiuj go do
+   GigaPMC\config\f12-overrides.json. Na serwerze Fika przenieś ewentualny
+   fika-server-settings.json do GigaPMC\config\fika-server-settings.json.
+5. Jeżeli stara konfiguracja F12 istnieje, skopiuj ją do
+   BepInEx\config\com.vargor.gigapmc.cfg (NIE zastępuj istniejącej nowej konfiguracji bez backupu).
+6. Usuń Z INSTALACJI (nie z backupu) starą DLL klienta:
+   BepInEx\plugins\PmcVitalityLevels.Client.dll
+   oraz cały stary folder serwera SPT_Runtime\user\mods\PmcVitalityLevels,
+   dopiero po zweryfikowaniu kopii ustawień i profilów.
+7. Wypakuj nową paczkę do korzenia SPT (np. C:\SPT), zachowaj istniejące pliki
+   GigaPMC\config\f12-overrides.json i GigaPMC\config\fika-server-settings.json.
+8. Uruchom serwer i grę. Sprawdź: ONE server mod / ONE client plugin, GigaPMC 1.0.0, HP
+   level 4 prestige 0 = 461/461. W Fika sprawdź co najmniej dwóch graczy i ich HP w rajdzie.
+
+ENGLISH
+1. Stop SPT/Fika and the game; backup ALL PMC profiles, current DLLs and configs.
+2. Backup the former `SPT_Runtime/user/mods/PmcVitalityLevels` folder.
+3. Copy old `BepInEx/config/com.igor.pmcvitalitylevels.client.cfg` to
+   `BepInEx/config/com.vargor.gigapmc.cfg` if present. Do not overwrite an existing
+   new config without comparing/backup.
+4. Copy legacy server settings `f12-overrides.json` or `fika-server-settings.json`
+   from the old mod folder to `SPT_Runtime/user/mods/GigaPMC/config/`.
+5. Remove the OLD client DLL and OLD server folder from the live game ONLY AFTER BACKUP.
+6. Extract this release into your SPT root; avoid two copies. Restart and verify HP.
+7. For Fika, install server DLL ONLY on the shared backend; optional F12 plugin on
+   gaming PCs. Host and guest should test real in-raid synchronization before declaring compatible.
+
+IMPORTANT: The new client GUID `com.vargor.gigapmc` does not reuse the old BepInEx config name. No automatic migration or deletion is performed by the ZIP or build script.

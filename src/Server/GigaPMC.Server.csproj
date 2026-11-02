@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Version>1.0.0</Version>
+    <Authors>Vargor / OptimisticSociopath</Authors>
+    <Product>GigaPMC - For Tarkov Enjoyers</Product>
+    <AssemblyName>GigaPMC.Server</AssemblyName>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(SptRuntime)' != ''">
+    <Reference Include="SPTarkov.Server.Core"><HintPath>$(SptRuntime)\SPTarkov.Server.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SPTarkov.DI"><HintPath>$(SptRuntime)\SPTarkov.DI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SPTarkov.Common"><HintPath>$(SptRuntime)\SPTarkov.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SPTarkov.Reflection"><HintPath>$(SptRuntime)\SPTarkov.Reflection.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SemanticVersioning" Condition="Exists('$(SptRuntime)\SemanticVersioning.dll')"><HintPath>$(SptRuntime)\SemanticVersioning.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>
