@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.packages/
+artifacts/
+.vs/
+*.user
+*.suo
+*.zip
+config/f12-overrides.json
+config/fika-server-settings.json
+*.log
