@@ -1,8 +1,17 @@
 {
+  "ConfigSchemaVersion": 200,
   "Enabled": true,
-  "BonusHpPerLevel": 1,
+  "HeadHpPerLevel": 1,
+  "ChestHpPerLevel": 5,
+  "StomachHpPerLevel": 4,
+  "LeftArmHpPerLevel": 2,
+  "RightArmHpPerLevel": 2,
+  "LeftLegHpPerLevel": 3,
+  "RightLegHpPerLevel": 3,
   "BonusHpEvery10Levels": 5,
-  "BonusHpAtMaxLevel": 12,
+  "BonusHpAtMaxLevel": 15,
   "BonusHpPerPrestige": 5,
+  "PrestigeMultiplicative": false,
+  "AutoDetectMaxPmcLevel": true,
   "MaxPmcLevel": 79
 }

@@ -1,21 +1,35 @@
-# GigaPMC - For Tarkov Enjoyers v1.0.0
+# GigaPMC 2.0.0
 
-Author: Vargor / OptimisticSociopath
-Target: SPT 4.1.6;
-This is a **source BUILD_ONLY** package. The native Windows 5.1 runner compiles both DLLs using your already-tested SPT references and .NET 10 SDK; when all steps PASS, it generates one release ZIP in Downloads. It does **not** install to C:\SPT or touch PMC profiles.
+Local PMC health and attribute bonuses for the audited SPT 4.1.6 build.
 
-### Renamed installed paths
-- `SPT_Runtime/user/mods/GigaPMC/GigaPMC.Server.dll`
-- `BepInEx/plugins/GigaPMC.Client.dll`
-- `SPT_Runtime/user/mods/GigaPMC/icon.png`
-- `SPT_Runtime/user/mods/GigaPMC/config/fika-server-settings.example.json`
+## New in 2.0.0
 
-### Identity
-- Server and client GUID: `com.vargor.gigapmc`
-- Release version **1.0.0**
-- Display name `GigaPMC - For Tarkov Enjoyers`
-- Author `Vargor / OptimisticSociopath`
+- Continuous horizontal movement scaling when descending stairs, ramps and slopes, including native falling/landing states after ground contact. This preserves the multiplier without forcing the character onto the ground.
+- F12 **11 Jump Distance**: enable jump scaling and choose a strength from 0% to 100%. Defaults: enabled, 100%. A movement bonus of +100% with jump strength 50% produces a horizontal jump multiplier of 1.5. Jump height and gravity inputs remain native. Settings apply next raid.
+- Per-level HP defaults: head 1, each arm 2, each leg 3, stomach 4, thorax 5. Milestone/prestige and other bonus defaults are unchanged. Existing saved values are preserved; reset only the seven body-part entries to adopt the new defaults.
 
-**BREAKING INSTALL PATH/GUID CHANGE:** This is NOT a simple overwrite. Backup profiles and config first; migrate existing configs manually, then remove prior installed DLLs and the old server mod folder. Read `MIGRATION_PL_EN.txt` in the generated release before installing. Having old and new server/client DLLs simultaneously may double-apply the profile patch.
+Movement still uses one native collision-controller call with bounded native substeps. No direct transform-position writes or post-collision displacement. Extreme requested speeds can be limited, and arbitrary-speed collision safety is not guaranteed. Fika retains the previous server-authoritative HP behavior; local movement bonuses are not activated by Fika clients.
 
-All numeric HP calculations and the Fika profile policy remain the same as P09 R2. The change is naming, GUID, assembly names and corresponding config paths;
+## Install
+
+Close SPT and the game. Replace the previous mod using `GigaPMC-v2.0.0-FULL-SSPTMM.zip`. Keep one client and one server DLL. Do not install the SOURCE-GITHUB archive as a mod.
+
+## Build on Windows (double-click)
+
+1. Download the source ZIP and **extract the entire archive**. Do not try to run a script from inside a ZIP preview.
+2. Install .NET SDK **10.0.403** and use the matching SPT 4.1.6 game at `C:\SPT`. Windows PowerShell 5.1 is required. Game DLLs are not included here.
+3. **Double-click `BUILD_WINDOWS.cmd`** in the extracted source folder. It starts the build and keeps the window open after success or failure.
+4. On failure, open `BUILD_LAST.log` in that folder and the step logs in `artifacts/build-...`. Both are ignored by Git.
+
+Advanced usage from Windows PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\BUILD.ps1 -GameRoot 'C:\SPT'
+```
+
+The first restore uses NuGet. Optional `-OfflineFeed` supplies a local feed with netstandard.library.ref 2.1.0. `GAME_REFERENCES_SHA256.csv` verifies the local game libraries. Outputs and step logs go to `artifacts/build-...`. The script builds both DLLs, runs movement/settings tests and a local ABI audit, then packages the mod without installing it.
+
+Client source: `src/Client`. Server source: `src/Server`. Current tests: `src/MovementTests`, `src/SettingsTests`. Build compatibility: `GAME_REFERENCES_SHA256.csv`. Some historical log and Harmony identifiers are intentionally retained for compatibility.
+
+
+The source archive contains no game binaries, private logs, profile data or obsolete test fixtures. MIT license; see [LICENSE](LICENSE). Full changes: [CHANGELOG](CHANGELOG.md).
