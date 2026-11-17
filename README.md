@@ -13,7 +13,7 @@ Movement still uses one native collision-controller call with bounded native sub
 
 ## Install
 
-Close SPT and the game. Replace the previous mod using `GigaPMC-v2.0.0-FULL-SSPTMM.zip`. Keep one client and one server DLL. Do not install the SOURCE-GITHUB archive as a mod.
+Close SPT and the game. Replace the previous mod using `GigaPMC-v2.0.0.zip`. Keep one client and one server DLL. Do not install the SOURCE-GITHUB archive as a mod.
 
 ## Build on Windows (double-click)
 
