@@ -4,37 +4,19 @@
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
-    <Version>2.0.0</Version>
-    <InformationalVersion>2.0.0</InformationalVersion>
+    <Version>1.0.0</Version>
     <Authors>Vargor / OptimisticSociopath</Authors>
     <Product>GigaPMC - For Tarkov Enjoyers</Product>
     <AssemblyName>GigaPMC.Client</AssemblyName>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup Condition="'$(SptGameRoot)' != ''">
-    <Reference Include="0Harmony">
-      <HintPath>$(SptGameRoot)\BepInEx\core\0Harmony.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="BepInEx">
       <HintPath>$(SptGameRoot)\BepInEx\core\BepInEx.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(SptGameRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>$(SptGameRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(SptGameRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <!-- P19 R2: TextAnchor enum lives in this Unity module (CS0012 / CS0103). -->
-    <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>$(SptGameRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine" Condition="Exists('$(SptGameRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.dll')">
@@ -43,5 +25,3 @@
     </Reference>
   </ItemGroup>
 </Project>
-
-

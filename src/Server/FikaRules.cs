@@ -51,13 +51,6 @@ public static class FikaRules
         => Path.Combine(sptRuntime, "user", "mods", "GigaPMC", "config",
             isFika ? "fika-server-settings.json" : "f12-overrides.json");
 
-    private static bool HasPropertyIgnoreCase(JsonElement root, string name)
-    {
-        foreach (var property in root.EnumerateObject())
-            if (property.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) return true;
-        return false;
-    }
-
     public static VitalitySettings LoadSettings(string sptRuntime, bool isFika)
     {
         var file = GetSettingsPath(sptRuntime, isFika);
@@ -66,22 +59,6 @@ public static class FikaRules
         {
             var config = JsonSerializer.Deserialize<VitalitySettings>(File.ReadAllText(file),
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            // A former configuration may still contain obsolete single-rate and
-            // mode-switch fields. Both are deliberately ignored: seven
-            // per-body-part values are now always authoritative.
-            using var parsed = JsonDocument.Parse(File.ReadAllText(file));
-            if (parsed.RootElement.ValueKind != JsonValueKind.Object)
-                return new VitalitySettings();
-            if (config != null && !HasPropertyIgnoreCase(parsed.RootElement, "ConfigSchemaVersion"))
-            {
-                // Only upgrade the previous published default values. Nondefault
-                // custom per-part settings remain unchanged. Schema 110 files
-                // already have explicit values and are not reset by upgrading.
-                if (config.ChestHpPerLevel == 2) config.ChestHpPerLevel = 5;
-                if (config.StomachHpPerLevel == 1) config.StomachHpPerLevel = 4;
-                if (config.BonusHpAtMaxLevel == 12) config.BonusHpAtMaxLevel = 15;
-                config.ConfigSchemaVersion = 200;
-            }
             // Invalid configs safely use defaults: never use partially parsed values.
             return config != null && config.IsValid() ? config : new VitalitySettings();
         }

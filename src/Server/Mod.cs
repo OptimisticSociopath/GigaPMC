@@ -12,7 +12,6 @@ using SPTarkov.Reflection.Patching;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Spt.Mod;
 using SPTarkov.Common.Models.Logging;
-using SPTarkov.Server.Core.Helpers.Profile;
 
 namespace GigaPMC.Server;
 
@@ -23,7 +22,7 @@ public record ModMetadata : IModMetadata
     public string Name { get; init; } = "GigaPMC - For Tarkov Enjoyers";
     public string Author { get; init; } = "Vargor / OptimisticSociopath";
     public List<string>? Contributors { get; init; }
-    public SemanticVersioning.Version Version { get; init; } = new("2.0.0");
+    public SemanticVersioning.Version Version { get; init; } = new("1.0.0");
     public SemanticVersioning.Range SptVersion { get; init; } = new("~4.1.6");
     public List<string>? Incompatibilities { get; init; }
     public Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }
@@ -33,8 +32,7 @@ public record ModMetadata : IModMetadata
 }
 
 [Injectable(TypePriority = OnLoadOrder.PostLoad)]
-public sealed class ServerEntry(ISptLogger<ServerEntry> log, PlayerProfileHealthPatch patch,
-    ProfileHelper profileHelper) : IOnLoad
+public sealed class ServerEntry(ISptLogger<ServerEntry> log, PlayerProfileHealthPatch patch) : IOnLoad
 {
     public Task OnLoadAsync(CancellationToken cancellationToken)
     {
@@ -43,13 +41,6 @@ public sealed class ServerEntry(ISptLogger<ServerEntry> log, PlayerProfileHealth
         {
             patch.Enable();
             var fika = FikaRules.IsFikaBackend(AppContext.BaseDirectory);
-            if (!fika)
-            {
-                try { LevelCapCache.Publish(AppContext.BaseDirectory, profileHelper.GetMaxLevel()); }
-                catch (Exception capError) {
-                    Console.WriteLine("[GigaPMC] Client raid level-cap cache unavailable: " + capError.Message);
-                }
-            }
             log.Success(fika
                 ? "[GigaPMC] Fika backend detected: per-PMC HP active; settings are server-authoritative (config/fika-server-settings.json, or defaults)."
                 : "[GigaPMC] Single-player backend: per-PMC HP active; local F12 overrides enabled.");
@@ -70,7 +61,6 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
     private static readonly double[] BaseHp = { 35, 85, 70, 60, 60, 65, 65 };
     private static readonly object Guard = new();
     private static bool _alreadyWarned;
-    private static string? _lastAppliedSummary;
 
     protected override MethodBase GetTargetMethod()
     {
@@ -89,10 +79,10 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
     }
 
     [PatchPostfix]
-    public static void Postfix(object __instance, object __result)
+    public static void Postfix(object __result)
     {
         if (__result == null) return;
-        try { Apply(__instance, __result); }
+        try { Apply(__result); }
         catch (Exception e)
         {
             lock (Guard)
@@ -125,7 +115,7 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
     private sealed record Plan(object Health, PropertyInfo MaxProp, PropertyInfo CurrentProp,
         double OldMaximum, double OldCurrent, double NewMaximum, double NewCurrent);
 
-    private static void Apply(object profileHelper, object profile)
+    private static void Apply(object profile)
     {
         var info = Read(profile, "Info");
         var health = Read(profile, "Health");
@@ -139,33 +129,8 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
         if (level < 1 || prestige < 0 || level > 10000 || prestige > 10000) return;
 
         var settings = LoadSettings();
-        // Use the live server's XP progression table via ProfileHelper.GetMaxLevel().
-        // No hardcoded 79 when a progression mod extends the game level cap.
-        int? detectedGameMax = null;
-        if (settings.Enabled && settings.AutoDetectMaxPmcLevel)
-        {
-            var method = profileHelper?.GetType().GetMethod("GetMaxLevel", BindingFlags.Public | BindingFlags.Instance,
-                null, Type.EmptyTypes, null);
-            if (method == null || method.ReturnType != typeof(int))
-                throw new MissingMemberException("ProfileHelper.GetMaxLevel() not available; refusing to guess max level");
-            detectedGameMax = (int)method.Invoke(profileHelper, null)!;
-        }
-        int maxLevel = settings.Enabled ? VitalityMath.ResolveMaxLevel(settings, detectedGameMax) : settings.MaxPmcLevel;
-        // Keep local client raid-entry math aligned with SPT's active XP table.
-        if (!FikaRules.IsFikaBackend(AppContext.BaseDirectory))
-        {
-            try
-            {
-                int? cacheCap = detectedGameMax;
-                if (!cacheCap.HasValue)
-                {
-                    var capGetter = profileHelper?.GetType().GetMethod("GetMaxLevel", Type.EmptyTypes);
-                    if (capGetter?.Invoke(profileHelper, null) is int result) cacheCap = result;
-                }
-                if (cacheCap.HasValue) LevelCapCache.Publish(AppContext.BaseDirectory, cacheCap.Value);
-            }
-            catch (Exception) { /* server-side HP remains authoritative */ }
-        }
+        var bonus = settings.Enabled ? VitalityMath.Bonus(level, prestige, settings) : 0;
+        if (bonus < 0 || bonus > 200000) return;
 
         var plan = new List<Plan>();
         for (int i = 0; i < Parts.Length; i++)
@@ -180,10 +145,7 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
             double oldMax = NeedDouble(maxProp.GetValue(partHealth), Parts[i] + ".Maximum");
             double oldCurrent = NeedDouble(currentProp.GetValue(partHealth), Parts[i] + ".Current");
             if (oldMax <= 0 || oldCurrent < 0 || oldCurrent > oldMax || oldMax > 200000) return;
-            long bonus = settings.Enabled ? VitalityMath.BonusForPart(level, prestige, settings, maxLevel, Parts[i]) : 0;
-            if (bonus < 0 || bonus > 200000) return; // No partial body-part writes.
             var newMax = BaseHp[i] + bonus;
-            if (newMax > 200000) return;
             var wounds = oldMax - oldCurrent;
             // When maximum health shrinks (prestige / F12 changes), preserve the
             // fraction of remaining HP so a living limb is not destroyed solely by
@@ -219,42 +181,5 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
                 throw;
             }
         }
-
-        // Observable confirmation that the server actually applied the CURRENT
-        // JSON settings. F12 alone does not guarantee the backend processed them.
-        string summary = $"L{level}|P{prestige}|CAP{maxLevel}|" +
-            string.Join("|", plan.Select((p, i) => Parts[i] + "=" + p.NewMaximum.ToString("0", System.Globalization.CultureInfo.InvariantCulture)));
-        lock (Guard)
-        {
-            if (!string.Equals(summary, _lastAppliedSummary, StringComparison.Ordinal))
-            {
-                _lastAppliedSummary = summary;
-                Console.WriteLine("[GigaPMC] APPLY_PMC_HEALTH|" + summary);
-            }
-        }
     }
 }
-
-// Small, non-profile cache so the local client can detect a non-79 game cap
-// before Player.Init. Published from the running SPT server; not user-editable.
-internal static class LevelCapCache
-{
-    private static int _lastCap = -1;
-    internal static void Publish(string runtime, int cap)
-    {
-        if (cap < 1 || cap > 1000) throw new InvalidDataException("SPT max level out of range");
-        if (_lastCap == cap) return;
-        string dir = Path.Combine(runtime, "user", "mods", "GigaPMC", "config");
-        if (!Directory.Exists(dir)) throw new DirectoryNotFoundException(dir);
-        string target = Path.Combine(dir, "server-level-cap.txt");
-        string temporary = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try
-        {
-            File.WriteAllText(temporary, cap.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            File.Move(temporary, target, true);
-            _lastCap = cap;
-        }
-        finally { if (File.Exists(temporary)) File.Delete(temporary); }
-    }
-}
-
