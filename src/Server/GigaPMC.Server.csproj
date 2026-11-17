@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Authors>Vargor / OptimisticSociopath</Authors>
     <Product>GigaPMC - For Tarkov Enjoyers</Product>
     <AssemblyName>GigaPMC.Server</AssemblyName>
@@ -19,3 +19,4 @@
     <Reference Include="SemanticVersioning" Condition="Exists('$(SptRuntime)\SemanticVersioning.dll')"><HintPath>$(SptRuntime)\SemanticVersioning.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>
+

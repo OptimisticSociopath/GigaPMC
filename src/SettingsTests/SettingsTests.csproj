@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>annotations</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Client/RaidHpSettings.cs" Link="RaidHpSettings.cs" />
+    <Compile Include="../Client/AttributeBonusMath.cs" Link="AttributeBonusMath.cs" />
+    <Compile Include="../Client/AttributeF12RaidLease.cs" Link="AttributeF12RaidLease.cs" />
+    <Compile Include="../Client/JumpDistanceSettings.cs" Link="JumpDistanceSettings.cs" />
+    <Compile Include="../Client/LegacySettingsReader.cs" Link="LegacySettingsReader.cs" />
+    <Compile Include="../Server/VitalityMath.cs" Link="VitalityMath.cs" />
+    <Compile Include="../Server/FikaRules.cs" Link="FikaRules.cs" />
+  </ItemGroup>
+</Project>
