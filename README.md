@@ -16,7 +16,7 @@ GigaPMC provides level-, milestone- and Prestige-based PMC health and attribute 
 - Movement Speed with native collision handling, controlled sprint and horizontal jump-distance scaling; movement and jump settings are frozen during a raid and apply on the next raid.
 - Menu/Hideout bonus readouts and live menu health refresh when the native Health panel is available.
 - One native-event-driven raid lifecycle. No periodic GameWorld/player scans.
-- Support for Prestige Perks; Skill Distribution is not a required dependency.
+- Support for Prestige Perks and Skill Distribution.
 
 ## Fika configuration
 
