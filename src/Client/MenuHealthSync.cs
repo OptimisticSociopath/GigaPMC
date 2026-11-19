@@ -90,6 +90,10 @@ namespace GigaPMC.Client
             if (!installed || rebinding || __instance == null || __args == null || __args.Length != 4) return;
             observedPanel = new WeakReference(__instance);
             observedPanelArgs = (object[])__args.Clone();
+            // Native panel Show is later than merely returning a Task or IEnumerator.
+            // Allows the pending raid F12 lease to release without Update polling.
+            try { owner?.P40R3AfterNativeMenuEvent(); }
+            catch(Exception ex) { log?.LogWarning("[GigaPMC] P201_PANEL_MENU_WITNESS_ERROR|"+ex.GetType().Name); }
         }
 
         // P29: reuse the existing, ABI-verified HP menu observer; no additional
@@ -115,7 +119,7 @@ namespace GigaPMC.Client
 
         internal static void Queue()
         {
-            if (!installed) return;
+            if (!installed || (owner!=null && owner.IsFikaClient && !owner.CanEditFikaHostHp)) return;
             if (!queued) log?.LogInfo("[GigaPMC] MENU_HEALTH_REFRESH_QUEUED|F12_CHANGED");
             queued = true;
             failureLogged = false;
@@ -191,6 +195,10 @@ namespace GigaPMC.Client
 
         private static void Refresh(object menu)
         {
+            // P09: only an explicitly opted-in same-machine SPT server admin
+            // may refresh the out-of-raid Fika menu. Server JSON remains
+            // authoritative for the NEXT GetPmcProfile call / raid entry.
+            if(owner!=null && owner.IsFikaClient && !owner.CanEditFikaHostHp) return;
             var inSessionValue = Read(menu, "IsInSession");
             if (!(inSessionValue is bool) || (bool)inSessionValue)
                 throw new InvalidOperationException("Only out-of-raid main menu may refresh");
@@ -212,6 +220,8 @@ namespace GigaPMC.Client
             int prestige = pVal == null ? 0 : Whole(pVal, "Prestige", 0, 10000);
             RaidHpSettings settings = owner.CurrentRaidSettings();
             if (!settings.IsValid()) throw new InvalidDataException("F12 settings validation failed");
+            // OFF must never reset foreign HP (or a previous GigaPMC value) to vanilla.
+            if (!settings.Enabled) { log?.LogInfo("[GigaPMC] MENU_HP_OFF_UNCHANGED|NO_PROFILE_WRITE"); return; }
             int? detectedCap = null;
             if (settings.AutoCap)
             {
@@ -242,7 +252,7 @@ namespace GigaPMC.Client
                 double oldCurrent = writer.Current;
                 if (oldMax <= 0 || oldMax > 200000 || oldCurrent < 0 || oldCurrent > oldMax)
                     throw new InvalidDataException(name + " old HP invalid");
-                double nextMax = BaseHp[i] + (settings.Enabled ? settings.Bonus(level, prestige, maxLevel, name) : 0);
+                double nextMax = BaseHp[i] + settings.Bonus(level, prestige, maxLevel, name);
                 if (nextMax <= 0 || nextMax > 200000) throw new InvalidDataException(name + " new HP invalid");
                 double nextCurrent = oldCurrent <= 0 ? 0 :
                     (nextMax < oldMax ? Math.Max(0, Math.Min(nextMax, nextMax * oldCurrent / oldMax)) :

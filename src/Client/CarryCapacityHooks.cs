@@ -29,17 +29,21 @@ namespace GigaPMC.Client
         private static FieldInfo bypassField;
         private static FieldInfo inertiaLimitsField, inertiaReadbackField;
         private static bool inertiaWarned, inertiaLogged;
+        private static bool nativeEncumbranceBypassLogged;
         private static Plugin owner;
         private static ManualLogSource logger;
         private static bool permanentlyBlocked;
         private static object candidateWorld;
         private static object activeWorld,activePlayer,activeProfile,activePhysical;
         private static float frozenRatio;
+        private static int nativeRetryBudget=4;
         private static int nextFrame;
         private static bool warned;
 
         // UI-only read. Exposes the already-frozen raid ratio, never an F12
         // reread or a guessed value. No Unity scans or disk access.
+        internal static bool NeedsNativeRetry => owner!=null && owner.P24CarryTrialEnabled &&
+            frozenRatio<=0f && !permanentlyBlocked;
         internal static bool TryGetFrozenRaidRatio(out float ratio)
         {
             lock(Sync)
@@ -139,6 +143,7 @@ namespace GigaPMC.Client
                 h.Patch(updateLimits,postfix:postfix);
                 HarmonyAudit.Require(updateLimits,"com.vargor.gigapmc.p24.experimental.carry",
                     nameof(AfterNativeWeightRecalculation),"postfix");
+                HarmonyAudit.ReportPostfixOwners(updateLimits,"CARRY",logger);
                 Status("P38_LIVE_ABI_CARRY|RUNTIME_TOKEN="+updateLimits.MetadataToken.ToString("X8")+"|UNIQUE_SIGNATURE|FIELD_TYPES_VERIFIED");
                 Status("P36_HARMONY_OWNER_REGISTERED|TOKEN=0600352B|ID=carrying-weight");
                 Status("ARMED|EXPERIMENTAL_CARRY_ONLY|WAITING_FOR_THREE_CLEAN_SAMPLES|DEFAULT_OFF");
@@ -202,14 +207,8 @@ namespace GigaPMC.Client
                 throw new InvalidDataException("INVALID_LEVEL_OR_PRESTIGE");
             return checked((int)d);
         }
-        // Server experience-table cap is stable for this game process.
-        // Never read a file on each half-second raid sample (anti-virus I/O stall).
-        private static readonly Lazy<int?> P40CachedServerCap = new Lazy<int?>(() =>
-        { string path=Path.Combine(Paths.GameRootPath,"SPT_Runtime","user","mods","GigaPMC","config","server-level-cap.txt");
-            int value;
-            return File.Exists(path) && int.TryParse(File.ReadAllText(path).Trim(),out value) ? (int?)value:null; });
-        private static int? Cap() => P40CachedServerCap.Value;
-        private static void Sample()
+        private static int? Cap() => ServerLevelCapCache.Read();
+        private static void Sample(bool inNativeRecalculation=false)
         {
             object world,player,profile,physical;
             if(!GetLocal(out world,out player,out profile,out physical))
@@ -234,9 +233,9 @@ namespace GigaPMC.Client
             int level=Number(Read(info,"Level"),1,10000);
             object p=Read(profile,"PrestigeLevel") ?? Read(info,"PrestigeLevel");
             int prestige=p==null?0:Number(p,0,10000);
-            int cap=owner.CurrentRaidSettings().ResolveCap(Cap());
-            decimal percent=owner.P09BonusRates(AttributeBonusKind.CarryWeight)
-                .TotalPercent(owner.P09GlobalEnabled,level,prestige,cap);
+            var rates=owner.P09BonusRates(AttributeBonusKind.CarryWeight);
+            int cap=AttributeCapPolicy.Resolve(owner.CurrentRaidSettings(),Cap(),rates);
+            decimal percent=rates.TotalPercent(owner.P09GlobalEnabled,level,prestige,cap);
             // The authenticated F12 lease already pins this exact local PMC.
             // A synthetic three-sample gate would be redundant and could
             // repeatedly read the profile during an otherwise frozen raid.
@@ -261,6 +260,13 @@ namespace GigaPMC.Client
             // on the fresh native result. OnWeightLimitsUpdated alone only
             // notifies consumers; it does not guarantee a native recompute.
             // Never call UpdateWeightLimits from inside our postfix.
+            if (inNativeRecalculation)
+            {
+                // We are already INSIDE UpdateWeightLimits postfix: the EFT
+                // vectors were just calculated. Never recursively invoke it.
+                Status("P201_NATIVE_CARRY_LATE_CAPTURE|POSTFIX_AFTER_EFT|NO_REENTRANT_REFRESH");
+                return;
+            }
             updateLimits.Invoke(physical,null);
             refreshWeight.Invoke(physical,null);
             // Native readback after OnWeightUpdated, not a fabricated movement
@@ -283,7 +289,9 @@ namespace GigaPMC.Client
                 frozenRatio=0f;
             }
             samples.Reset(); candidateWorld=null;
+            nativeRetryBudget=4;
             inertiaWarned=false; inertiaLogged=false;
+            nativeEncumbranceBypassLogged=false;
         }
         private static void Disarm()
         {
@@ -306,14 +314,51 @@ namespace GigaPMC.Client
             }
             catch(Exception ex) { Block("DISARM_RECALC_"+ex.GetType().Name); }
         }
+        // Optional bootstrap on the local PMC's *native* weight recalculation.
+        // No Unity Update scan; never inspect or change bot Physical objects.
+        // This covers a Physical instance becoming ready after raid-entry events.
+        private static void TryCaptureFromNativeWeight(object instance)
+        {
+            if (nativeRetryBudget<=0 || owner==null || !owner.P24CarryTrialEnabled ||
+                permanentlyBlocked || frozenRatio>0f || instance==null) return;
+            object world=RaidLifecycleHook.CurrentWorld;
+            if(world==null) return;
+            object local=Read(world,"MainPlayer");
+            if(local==null || !owner.P29IsCapturedLocalPlayer(local) ||
+                !ReferenceEquals(Read(local,"Physical"),instance)) return;
+            nativeRetryBudget--;
+            try { Sample(true); }
+            catch(Exception ex)
+            {
+                Block("P201_NATIVE_CAPTURE_"+ex.GetType().Name);
+            }
+        }
         private static void AfterNativeWeightRecalculation(object __instance)
         {
             try
             {
+                // On-demand one-shot fallback if earlier lease events ran
+                // before the local Physical was initialized.
+                if(frozenRatio<=0f) TryCaptureFromNativeWeight(__instance);
                 lock(Sync)
                 {
                     if(frozenRatio<=0f || !ReferenceEquals(activePhysical,__instance) ||
-                        !owner.P24CarryTrialEnabled || (bool)bypassField.GetValue(__instance)) return;
+                        !owner.P24CarryTrialEnabled) return;
+                    bool bypass=(bool)bypassField.GetValue(__instance);
+                    if(bypass)
+                    {
+                        if(!nativeEncumbranceBypassLogged)
+                        {
+                            nativeEncumbranceBypassLogged=true;
+                            Status("P204_NATIVE_ENCUMBRANCE_BYPASS|NATIVE_FLAG_TRUE|NO_GIGAPMC_WRITE");
+                        }
+                        return;
+                    }
+                    if(nativeEncumbranceBypassLogged)
+                    {
+                        nativeEncumbranceBypassLogged=false;
+                        Status("P204_NATIVE_ENCUMBRANCE_RESTORED|FRESH_EFT_WEIGHT_RECALC");
+                    }
                     BaselineRange[] native=new BaselineRange[4];
                     for(int i=0;i<4;i++)
                     {

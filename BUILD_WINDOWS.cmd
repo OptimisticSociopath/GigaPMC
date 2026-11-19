@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
-title GigaPMC v2.0.0 - Windows Build
+title GigaPMC v2.0.1 - Windows Build
 cd /d "%~dp0"
 if errorlevel 1 goto :directory_error
 
@@ -10,10 +10,10 @@ set "GIGAPMC_CANDIDATE="
 set "GIGAPMC_PATH_FILE="
 if defined LOCALAPPDATA set "GIGAPMC_PATH_FILE=%LOCALAPPDATA%\GigaPMC\game-root.txt"
 
-> "%GIGAPMC_BUILD_LOG%" echo GigaPMC v2.0.0 Windows launcher started.
+> "%GIGAPMC_BUILD_LOG%" echo GigaPMC v2.0.1 Windows launcher started.
 
 echo ==========================================================
-echo   GigaPMC v2.0.0 - build client, server and release ZIP
+echo   GigaPMC v2.0.1 - build client, server and release ZIP
 echo ==========================================================
 echo Source: "%CD%"
 echo Log:    "%GIGAPMC_BUILD_LOG%"
@@ -110,7 +110,8 @@ goto :finish
 
 :success
 echo PASS: Build script finished successfully.
-echo See artifacts\build-* for the release ZIP and detailed logs.
+echo Verified P08 release ZIP is exported to your Downloads folder.
+echo The detailed build logs remain under artifacts\build-*.
 goto :finish
 
 :missing_build

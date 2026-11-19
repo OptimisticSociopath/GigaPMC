@@ -23,6 +23,17 @@ foreach(bool accumulated in new[]{false,true})
         "CLIENT_SERVER_PARITY_"+level+"_"+prestige+"_"+accumulated);
 }
 Check(client.EveryTen==5&&client.AtMax==15&&client.Prestige==5&&client.ManualCap==79&&client.AutoCap,"OTHER_HP_DEFAULTS_UNCHANGED");
+var onlyPrestige = AttributeBonusMath.Defaults(AttributeBonusKind.CarryWeight);
+onlyPrestige.AtMaxLevelEnabled = false;
+Check(AttributeCapPolicy.Resolve(client,null,onlyPrestige)==0,"UNKNOWN_CAP_ALLOWED_IF_ATMAX_OFF");
+Check(onlyPrestige.TotalPercent(true,1,1,0)==5m,"PMC_L1_PRESTIGE1_WITHOUT_CAP_IS_PLUS_FIVE");
+Check(onlyPrestige.TotalPercent(true,1,0,0)==0m,"PMC_L1_PRESTIGE0_IS_ZERO");
+bool absentCapRejected=false;
+try { AttributeCapPolicy.Resolve(client,null,AttributeBonusMath.Defaults(AttributeBonusKind.CarryWeight)); }
+catch(InvalidOperationException) { absentCapRejected=true; }
+Check(absentCapRejected,"ATMAX_ENABLED_REQUIRES_REAL_CAP");
+Check(AttributeCapPolicy.Resolve(new RaidHpSettings{AutoCap=false,ManualCap=90},null,
+    AttributeBonusMath.Defaults(AttributeBonusKind.CarryWeight))==90,"MANUAL_CAP_RETAINED");
 Check(new VitalitySettings().ConfigSchemaVersion==200&&new VitalitySettings{ConfigSchemaVersion=110}.IsValid(),"VERSION_2_AND_OLD_SCHEMA_ACCEPTED");
 Check(!new VitalitySettings{ChestHpPerLevel=101}.IsValid()&&!new RaidHpSettings{Head=-1}.IsValid(),"INVALID_HP_RATES_REJECTED");
 foreach(var kind in AttributeBonusMath.OrderedKinds)
@@ -32,6 +43,23 @@ foreach(var kind in AttributeBonusMath.OrderedKinds)
         rates.AtMaxLevelPercent==(movement?5m:10m)&&rates.PrestigeMode==PercentPrestigeMode.Fixed&&
         rates.PrestigeTiers.SequenceEqual(movement?new decimal[]{2,4,6,8,10,12}:new decimal[]{5,8,11,14,17,20}),"OTHER_BONUS_DEFAULTS_UNCHANGED_"+kind);
 }
+// P03 Fika guard: server HP OFF and local attribute lease ON are independent.
+var fikaLease=new AttributeF12RaidLease();object fikaOwner=new();
+fikaLease.Capture(fikaOwner,
+    new RaidHpSettings { Enabled=false,AutoCap=false,ManualCap=79 },
+    AttributeBonusMath.Defaults,true,true,true,true,new JumpDistanceSettings(true,100));
+Check(fikaLease.Active&&fikaLease.Hp().Enabled==false&&fikaLease.GlobalEnabled&&
+    fikaLease.CarryEnabled&&fikaLease.StaminaEnabled&&fikaLease.EffectsEnabled,
+    "FIKA_SERVER_HP_OFF_WHILE_LOCAL_ATTRIBUTES_ON");
+Check(fikaLease.Rates(AttributeBonusKind.CarryWeight).TotalPercent(
+    fikaLease.GlobalEnabled,1,1,fikaLease.Hp().ResolveCap(null))==5m,
+    "FIKA_L1_PRESTIGE1_CARRY_PLUS_FIVE");
+fikaLease.Capture(fikaOwner,new RaidHpSettings{Enabled=true},
+    _=>throw new Exception("MUST_NOT_RESAMPLE_FIKA_F12"),false,false,false,false);
+Check(!fikaLease.Hp().Enabled&&fikaLease.CarryEnabled,
+    "FIKA_SAME_RAID_F12_CHANGES_DEFERRED");
+fikaLease.Clear();
+Check(!fikaLease.Active&&!fikaLease.CarryEnabled,"FIKA_RAID_END_CLEARS_LOCAL_EFFECTS");
 var lease=new AttributeF12RaidLease();object player=new();
 lease.Capture(player,new RaidHpSettings(),AttributeBonusMath.Defaults,true,true,true,true,new JumpDistanceSettings(true,50));
 lease.Capture(player,new RaidHpSettings{Chest=99},_=>throw new Exception("RECAPTURE_READ_PENDING"),true,true,true,true,new JumpDistanceSettings(false,0));
@@ -69,6 +97,53 @@ finally
     if(!resolved.StartsWith(parent,StringComparison.OrdinalIgnoreCase)||!Path.GetFileName(resolved).StartsWith("GigaPMC-settings-test-"))throw new Exception("TEMP_CLEANUP_PATH");
     Directory.Delete(resolved,true);
 }
+// P09: local Fika-server admin F12 edits use an atomic, strictly validated JSON mirror.
+var sharedHp = new RaidHpSettings { Enabled=true, Head=7, Chest=16, Stomach=9,
+    LeftArm=8, RightArm=4, LeftLeg=5, RightLeg=2, EveryTen=11, AtMax=31,
+    Prestige=9, Multiplicative=true, AutoCap=false, ManualCap=103 };
+var sharedJson = FikaHpHostConfig.ToJson(sharedHp);
+Check(FikaHpHostConfig.TryParse(sharedJson,out var parsedHp) &&
+    parsedHp.Head==7 && parsedHp.Chest==16 && parsedHp.Stomach==9 &&
+    parsedHp.LeftArm==8 && parsedHp.RightArm==4 && parsedHp.LeftLeg==5 &&
+    parsedHp.RightLeg==2 && parsedHp.EveryTen==11 && parsedHp.AtMax==31 &&
+    parsedHp.Prestige==9 && parsedHp.Multiplicative && !parsedHp.AutoCap &&
+    parsedHp.ManualCap==103,"P09_FIKA_HP_JSON_ALL_F12_FIELDS_ROUNDTRIP");
+Check(FikaHpHostConfig.TryParse("{\"ConfigSchemaVersion\":200,\"HeadHpPerLevel\":4}",out var partialHp) &&
+    partialHp.Head==4 && partialHp.Chest==5,"P09_FIKA_HP_JSON_PARTIAL_USES_SERVER_DEFAULTS");
+Check(!FikaHpHostConfig.TryParse("{\"HeadHpPerLevel\":4,\"HeadHpPerLevel\":7}",out _),
+    "P09_FIKA_HP_JSON_DUPLICATE_KEY_REJECTED");
+Check(!FikaHpHostConfig.TryParse("{\"ChestHpPerLevel\":101}",out _),
+    "P09_FIKA_HP_JSON_OUT_OF_RANGE_REJECTED");
+Check(!FikaHpHostConfig.TryParse("{\"Enabled\":false,\"Hidden\":true}",out _),
+    "P09_FIKA_HP_JSON_UNKNOWN_KEY_REJECTED");
+Check(!FikaHpHostConfig.TryParse("{\"Enabled\":tru}",out _),
+    "P09_FIKA_HP_JSON_INVALID_BOOLEAN_REJECTED");
+Check(!FikaHpHostConfig.TryParse("{\"Enabled\":true}garbage",out _),
+    "P09_FIKA_HP_JSON_TRAILING_BYTES_REJECTED");
+Check(FikaHpHostConfig.TryParse("{\"ConfigSchemaVersion\":110}",out _) &&
+    FikaHpHostConfig.TryParse("{\"ConfigSchemaVersion\":0}",out _),
+    "P09_FIKA_HP_JSON_SCHEMA_110_ACCEPTED");
+var hostTest = Path.Combine(Path.GetTempPath(),"GigaPMC-p09-host-"+Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(hostTest);
+try {
+    string hostFile=Path.Combine(hostTest,"fika-server-settings.json");
+    Check(FikaHpHostConfig.TryRead(hostFile,out var absentHp,out _) && absentHp.Chest==5,
+        "P09_FIKA_HP_ABSENT_FILE_SERVER_DEFAULTS");
+    FikaHpHostConfig.WriteAtomic(hostFile,sharedHp);
+    Check(FikaHpHostConfig.TryRead(hostFile,out var diskHp,out _) && diskHp.Chest==16 &&
+        diskHp.ManualCap==103,"P09_FIKA_HP_FILE_ATOMIC_WRITE_READBACK");
+    sharedHp.Chest=17;
+    FikaHpHostConfig.WriteAtomic(hostFile,sharedHp);
+    Check(FikaHpHostConfig.TryRead(hostFile,out diskHp,out _) && diskHp.Chest==17 &&
+        File.Exists(hostFile+".bak"),"P09_FIKA_HP_FILE_ATOMIC_REPLACE_BACKUP");
+}
+finally {
+    if (!Path.GetFileName(hostTest).StartsWith("GigaPMC-p09-host-",StringComparison.Ordinal) ||
+        !Path.GetFullPath(hostTest).StartsWith(Path.GetFullPath(Path.GetTempPath()),StringComparison.OrdinalIgnoreCase))
+        throw new Exception("P09_TEMP_GUARD");
+    Directory.Delete(hostTest,true);
+}
+Console.WriteLine("P09_FIKA_HP_HOST_JSON_TESTS_PASS");
 Console.WriteLine("SETTINGS_TESTS_PASS|CHECKS="+checks);
 }
 catch(Exception ex){Console.Error.WriteLine("SETTINGS_TESTS_FAIL|"+ex);Environment.ExitCode=1;}

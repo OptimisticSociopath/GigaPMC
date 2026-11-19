@@ -133,18 +133,7 @@ namespace GigaPMC.Client
 
         // Read-only inspection of the existing, SHA-pinned Health-menu observer.
         // Avoid touching any Health/HP source file or registering duplicate Harmony patches.
-        // This config file is immutable for the running game session.
-        // Resolve ONCE, not from the native Carrying Weight UI callback.
-        private static readonly Lazy<int?> P42ServerLevelCap = new Lazy<int?>(() =>
-        {
-            string levelPath=Path.Combine(Paths.GameRootPath,"SPT_Runtime","user","mods",
-                "GigaPMC","config","server-level-cap.txt");
-            int parsed;
-            return File.Exists(levelPath) &&
-                int.TryParse(File.ReadAllText(levelPath).Trim(),
-                    NumberStyles.Integer,CultureInfo.InvariantCulture,out parsed)
-                ? (int?)parsed : null;
-        });
+        // One shared successful cap; failed early reads can recover after menu readiness.
 
         internal static bool TryReadMenuPmc(out int level, out int prestige, out int cap,
             out object menuProfile)
@@ -169,10 +158,10 @@ namespace GigaPMC.Client
             if (prestigeRaw != null && !Whole(prestigeRaw,0,10000,out prestige)) return false;
             // Match the existing server-authoritative cap rule. No fallback to 79
             // when automatic detection is enabled and server cap is unavailable.
-            int? detected=P42ServerLevelCap.Value;
+            int? detected=ServerLevelCapCache.Read();
             try { cap = Plugin.P19CurrentLevelCap(detected); }
-            catch (ArgumentException) { return false; }
-            catch (InvalidOperationException) { return false; }
+            catch (ArgumentException) { if (detected.HasValue) return false; cap=0; }
+            catch (InvalidOperationException) { if (detected.HasValue) return false; cap=0; }
             menuProfile = profile;
             return true;
         }

@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Fika lifecycle source-contract tests. Does not replace C# build or Fika multiplayer test."""
+from pathlib import Path
+root=Path(__file__).resolve().parents[1]
+def read(name):return (root/name).read_text(encoding='utf-8-sig')
+def check(ok,name):
+    if not ok: raise AssertionError('FAIL|'+name)
+    print('PASS|'+name)
+plugin=read('src/Client/Plugin.cs')
+raid=read('src/Client/RaidLifecycleHook.cs')
+fika=read('src/Client/FikaLocalBridge.cs')
+carry=read('src/Client/CarryCapacityHooks.cs')
+stamina=read('src/Client/StaminaCapacityHooks.cs')
+audit=read('src/Client/HarmonyAudit.cs')
+check('if(!plugin.IsFikaClient)' in raid and 'session=assemblies.Select' in raid, 'FIKA_LOCALRAIDSTARTED_NOT_REQUIRED')
+check('if(nativeRaid!=null)' in raid and 'harmony.Patch(nativeRaid,postfix:lateRaid);' in raid,'SPT_NATIVE_RAID_HOOK_PRESERVED')
+check('InstallFikaEndHooks' in fika and all(x in fika for x in ('"Stop"','"StopFromCancel"','"Dispose"')),'FIKA_EVENT_DRIVEN_TEARDOWN')
+check('OnFikaSessionEnded' in raid and 'ReferenceEquals(stoppedWorld,activeWorld)' in raid,'FIKA_WORLD_SCOPED_RESET')
+check('P204OnFikaSessionEnded' in plugin and 'raidF12.Clear();' in plugin,'FIKA_RAID_LEASE_RESET')
+check('HarmonyAudit.ReportPostfixOwners(updateLimits,"CARRY",logger)' in carry,'CARRY_HARMONY_OWNER_LOG')
+check('HarmonyAudit.ReportPostfixOwners(target,"STAMINA",logger)' in stamina,'STAMINA_HARMONY_OWNER_LOG')
+check('P204_NATIVE_ENCUMBRANCE_BYPASS' in carry and 'P204_NATIVE_ENCUMBRANCE_RESTORED' in carry,'NATIVE_ENCUMBRANCE_BYPASS_DIAGNOSTIC')
+check('Priority.Last' in carry and 'Priority.Last' in stamina,'LAST_PRIORITY_PRESERVED')
+check('fikaLocalAttributeBonuses' in plugin and 'true,' in plugin and '"01 General", "Enabled", true,' in plugin, 'FIKA_DEFAULTS_ENABLED')
+check('FikaLocalBridge.IsVerifiedLocalPmc' in raid,'FIKA_ONLY_LOCAL_PMC')
+check('if (isFika) return false;' in plugin,'FIKA_NO_SINGLEPLAYER_JSON_MUTATION')
+check('if(!CanEditFikaHostHp) return false;' in plugin and 'FikaHpHostConfig.WriteAtomic' in plugin, 'P09_FIKA_SHARED_HP_REQUIRES_LOCAL_HOST_OPTIN')
+check('NO_SKILL_DISTRIBUTION_DEPENDENCY' in plugin,'SKILL_DISTRIBUTION_NOT_REQUIRED')
+cs='\n'.join(x.read_text(encoding='utf-8-sig') for x in (root/'src').rglob('*.cs'))
+check('PrestigePerks.' not in cs and 'SkillDistribution.' not in cs,'NO_COMPILETIME_PRESTIGE_OR_SKILL_DIST')
+check('<Reference Include="Fika.Core"' not in read('src/Client/GigaPMC.Client.csproj'),'NO_FIKA_DLL_REFERENCE')
+print('P204_SOURCE_CHECK_PASS|STATIC_ONLY|NO_BUILD_OR_GAMEPLAY')

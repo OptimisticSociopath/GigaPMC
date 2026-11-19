@@ -75,9 +75,23 @@ Check(Method("SimpleCharacterController","get_isGrounded").Body.Instructions.Any
 var bindGround=live.Single(m=>m.Name=="BindLocomotionGround");
 Check(bindGround.Body.Instructions.Any(i=>i.OpCode==OpCodes.Ldstr&&(string)i.Operand=="IsGrounded")&&
     !bindGround.Body.Instructions.Any(i=>i.OpCode==OpCodes.Ldstr&&(string)i.Operand=="isGrounded"),"R2_BINDS_NATIVE_CONTEXT_GROUND_NOT_RAW_CONTACT");
+// P07: the runtime method contract must compare metadata identity rather
+// than unstable MethodInfo object equality through Fika-derived contexts.
+var bridgeType=candidate.Types.Single(t=>t.FullName=="GigaPMC.Client.CharacterMovementBridge");
+var sameImplementation=bridgeType.Methods.Single(m=>m.Name=="SameDirectImplementation");
+Check(Calls(sameImplementation).Any(m=>m.Name=="get_MetadataToken") &&
+      Calls(sameImplementation).Any(m=>m.Name=="get_ModuleVersionId") &&
+      Calls(sameImplementation).Any(m=>m.Name=="get_DeclaringType") &&
+      Calls(sameImplementation).Any(m=>m.Name=="GetParameters"),
+      "P07_RUNTIME_DIRECT_APPLY_METADATA_IDENTITY_GUARD");
+var armBridge=bridgeType.Methods.Single(m=>m.Name=="Arm");
+Check(Calls(armBridge).Any(m=>m.Name=="SameDirectImplementation")&&
+      armBridge.Body.Instructions.Any(i=>i.OpCode==OpCodes.Ldstr&&
+           (string)i.Operand=="DIRECT_APPLY_IMPLEMENTATION_DIFFERENT|NATIVE="),
+      "P07_REAL_OVERRIDE_FAIL_CLOSED_WITH_DIAGNOSTIC");
 var plugin=candidate.Types.Single(t=>t.Name=="Plugin");
 var pluginAttribute=plugin.CustomAttributes.Single(a=>a.AttributeType.Name=="BepInPlugin");
-Check((string)pluginAttribute.ConstructorArguments[2].Value=="2.0.0"&&candidate.Assembly.Name.Version==new Version(2,0,0,0),"PLUGIN_AND_ASSEMBLY_VERSION_2_0_0");
+Check((string)pluginAttribute.ConstructorArguments[2].Value=="2.0.1"&&candidate.Assembly.Name.Version==new Version(2,0,1,0),"PLUGIN_AND_ASSEMBLY_VERSION_2_0_1");
 var awake=plugin.Methods.Single(m=>m.Name=="Awake").Body.Instructions;
 int IntConstant(Instruction i)=>i.OpCode.Code switch {Code.Ldc_I4_0=>0,Code.Ldc_I4_1=>1,Code.Ldc_I4_2=>2,Code.Ldc_I4_3=>3,Code.Ldc_I4_4=>4,Code.Ldc_I4_5=>5,Code.Ldc_I4_6=>6,Code.Ldc_I4_7=>7,Code.Ldc_I4_8=>8,Code.Ldc_I4=>Convert.ToInt32(i.Operand),Code.Ldc_I4_S=>Convert.ToInt32(i.Operand),_=>-1};
 int[] hpDefaults={1,5,4,2,2,3,3};

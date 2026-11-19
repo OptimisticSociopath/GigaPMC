@@ -3,7 +3,7 @@ using System;
 namespace GigaPMC.Client
 {
     // P16: pure independent projection from persisted skill Progress (P15),
-    // pinned native formulas (P12 / P05), and supplied unmodified config values.
+    // pinned native formulas and supplied unmodified config values.
     // NO game/profile writes. NO hooks. DO NOT treat a projection as certified.
     internal enum BaselineProvenance
     {

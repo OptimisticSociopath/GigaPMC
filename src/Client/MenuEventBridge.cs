@@ -48,7 +48,7 @@ namespace GigaPMC.Client
         private static void AfterNativeMenuOperation(object __instance)
         {
             try { owner?.P40R3AfterNativeMenuEvent(); }
-            catch(Exception) { /* Do not interrupt EFT or HP. */ }
+            catch(Exception ex) { /* Do not interrupt EFT or HP. */ }
         }
     }
 }

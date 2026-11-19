@@ -1,36 +1,56 @@
-# GigaPMC 2.0.0
+# GigaPMC – For Tarkov Enjoyers 2.0.1
 
-Local PMC health and attribute bonuses for the audited SPT 4.1.6 build.
+**Author:** Vargor / OptimisticSociopath  
+**Game:** SPT 4.1.6  
+**Optional co-op:** Fika 2.4.6 (shared SPT server)  
+**Version:** 2.0.1
 
-## New in 2.0.0
+GigaPMC provides level-, milestone- and Prestige-based PMC health and attribute bonuses.
 
-- Your PMC get bonuses to carry weight, stamina, ADS usage, melee damage and moving speed per character level! By default you get 1% per lvl to carry weight, stamina, ADS usage, melee damage and 0,25% to moving speed. Everything can be changed or disabled in F12.
-- Milestone and Prestige bonuses for carry weight, stamina, ADS usage, melee damage and moving speed are included and their bonuses can be adjusted in f12
-- Jump Distance: enable jump scaling and choose a strength from 0% to 100%. Defaults: enabled, 100%. A movement bonus of +100% with jump strength 50% produces a horizontal jump multiplier of 1.5. Jump height and gravity inputs remain native. Settings apply next raid.
-- Per-level HP defaults: head 1, each arm 2, each leg 3, stomach 4, thorax 5. Milestone/prestige and other bonus defaults are unchanged. Existing saved values are preserved; reset only the seven body-part entries to adopt the new defaults.
+## Included features
 
-Movement still uses one native collision-controller call with bounded native substeps. No direct transform-position writes or post-collision displacement. Extreme requested speeds can be limited, and arbitrary-speed collision safety is not guaranteed. Fika retains the previous server-authoritative HP behavior; local movement bonuses are not activated by Fika clients.
+- Seven configurable HP gains: head, chest, stomach, left/right arms and left/right legs.
+- Extra HP at every tenth level and at the maximum PMC level.
+- Additive or multiplicative Prestige HP bonuses.
+- Five individually configurable local PMC bonuses: carrying weight, body stamina, movement speed, ADS endurance and melee damage.
+- Movement Speed with native collision handling, controlled sprint and horizontal jump-distance scaling; movement and jump settings are frozen during a raid and apply on the next raid.
+- Menu/Hideout bonus readouts and live menu health refresh when the native Health panel is available.
+- One native-event-driven raid lifecycle. No periodic GameWorld/player scans.
+- Support for Prestige Perks; Skill Distribution is not a required dependency.
 
-## Install
+## Fika configuration
 
-Close SPT and the game. Replace the previous mod using `GigaPMC-v2.0.0.zip`. Keep one client and one server DLL. Do not install the SOURCE-GITHUB archive as a mod.
+**Shared HP is calculated by the SPT/Fika server.** A local server administrator can change the shared HP settings using F12 without manually editing JSON:
 
-## Build on Windows (double-click)
+`00 Fika > 02 Edit shared HP on this computer (SPT server host)`
 
-1. Download the source ZIP and **extract the entire archive**. Do not try to run a script from inside a ZIP preview.
-2. Install .NET SDK **10.0.403** and use the matching SPT 4.1.6 game at `C:\SPT`. Windows PowerShell 5.1 is required. Game DLLs are not included here.
-3. **Double-click `BUILD_WINDOWS.cmd`** in the extracted source folder. It starts the build and keeps the window open after success or failure.
-4. On failure, open `BUILD_LAST.log` in that folder and the step logs in `artifacts/build-...`. Both are ignored by Git.
+The default is **Enabled** on the local server installation. The mod checks for the local server DLL and `fika-server` directory; remote clients cannot write server HP settings through F12. Local host edits update `SPT_Runtime/user/mods/GigaPMC/config/fika-server-settings.json` with a `.bak` backup. Changes made during a raid take effect on the next profile/raid cycle.
 
-Advanced usage from Windows PowerShell:
+**The other five bonus tracks are controlled per local PMC client**, not globally pushed from the host. Every player using GigaPMC has their own F12 attribute settings. The general Enabled key on a Fika client controls those local attributes, not the shared server HP toggle.
+
+`99 GigaPMC Developer > 01 DEV VISION - Enable` defaults to **Disabled**.
+
+**Upgrading from a previous 2.0.1 candidate:** BepInEx preserves explicitly saved F12 values. If an earlier build saved the host HP editor as Disabled, press **Reset** on that setting to adopt the new Enabled default. Likewise press Reset for DEV VISION if your old local configuration still has it Enabled. These resets do not reset the seven HP sliders or the other bonus settings.
+
+## Installation
+
+Close the game and SPT server. Extract `GigaPMC-v2.0.1-FULL-READY.zip` into the SPT root, keeping the archive's `BepInEx/` and `SPT_Runtime/` folder structure. Replace the previous GigaPMC client and server DLLs after backing them up. The ZIP includes only `fika-server-settings.example.json`; it does **not** replace an existing server `fika-server-settings.json`.
+
+- Client: `BepInEx/plugins/GigaPMC.Client.dll`
+- Server: `SPT_Runtime/user/mods/GigaPMC/GigaPMC.Server.dll`
+
+Install the same release on the game installations where local bonus functionality is wanted, and install the server component on the shared SPT backend.
+
+## Build from complete source (Windows)
+
+Requires .NET SDK 10.0.403 and the matching SPT 4.1.6 game at `C:\SPT`. Windows PowerShell 5.1:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\BUILD.ps1 -GameRoot 'C:\SPT'
 ```
 
-The first restore uses NuGet. Optional `-OfflineFeed` supplies a local feed with netstandard.library.ref 2.1.0. `GAME_REFERENCES_SHA256.csv` verifies the local game libraries. Outputs and step logs go to `artifacts/build-...`. The script builds both DLLs, runs movement/settings tests and a local ABI audit, then packages the mod without installing it.
+`BUILD.ps1` validates game assembly hashes, cleans all five projects, recompiles client/server/tests, runs 69 Movement checks, 89 Settings checks and 51 ABI checks, verifies the new DLL and ZIP entries, and exports the complete release ZIP to `%USERPROFILE%\Downloads`.
 
-Client source: `src/Client`. Server source: `src/Server`. Current tests: `src/MovementTests`, `src/SettingsTests`. Build compatibility: `GAME_REFERENCES_SHA256.csv`. Some historical log and Harmony identifiers are intentionally retained for compatibility.
+**Source folders:** `src/Client`, `src/Server`, `src/MovementTests`, `src/SettingsTests`. The `tools` directory contains retained regression/ABI checks. Internal diagnostic IDs are kept stable to avoid disrupting functional code. See `CHANGELOG.md`.
 
-
-The source archive contains no game binaries, private logs, profile data or obsolete test fixtures. MIT license; see [LICENSE](LICENSE). Full changes: [CHANGELOG](CHANGELOG.md).
+Licensed under MIT; see `LICENSE`.

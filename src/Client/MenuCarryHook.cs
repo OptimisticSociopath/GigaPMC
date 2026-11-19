@@ -85,8 +85,9 @@ namespace GigaPMC.Client
                         throw new MissingFieldException("CG_SHOW_FIELD_ABI_"+item.Name);
                 }
                 harmony = new Harmony(PatchOwner);
-                harmony.Patch(showWeight,
-                    transpiler:new HarmonyMethod(typeof(MenuCarryHook),nameof(AfterNativeCalculations)));
+                var lateMenu=new HarmonyMethod(typeof(MenuCarryHook),nameof(AfterNativeCalculations));
+                lateMenu.priority=Priority.Last;
+                harmony.Patch(showWeight,transpiler:lateMenu);
                 HarmonyAudit.Require(showWeight,PatchOwner,
                     nameof(AfterNativeCalculations),"transpiler");
                 installed = true;
@@ -212,8 +213,14 @@ namespace GigaPMC.Client
                         .TotalPercent(owner.P09GlobalEnabled,level,prestige,cap);
                 }
                 if(percent<0m || percent>100000m) return nativeKg;
+                if(percent==0m)
+                {
+                    if(upper) logger?.LogDebug("[GigaPMC] P37_MENU_NATIVE_WEIGHT_UNCHANGED_ZERO_PERCENT");
+                    return nativeKg;
+                }
                 float modified;
                 if (!MenuCarryMath.TryScale(nativeKg,percent,out modified)) return nativeKg;
+                if (modified<=nativeKg) return nativeKg; // No APPLIED message for unchanged numbers.
                 if(upper)
                 {
                     seenUpper=true;

@@ -9,6 +9,24 @@ namespace GigaPMC.Client
     // This proves registration ONLY. It cannot prove an EFT call executed.
     internal static class HarmonyAudit
     {
+        // Actual Harmony registration observation (not proof of execution
+        // order or correct native results). Optional mod owners are never
+        // referenced, required or loaded by GigaPMC.
+        internal static void ReportPostfixOwners(MethodBase target,string label,
+            BepInEx.Logging.ManualLogSource log)
+        {
+            try
+            {
+                var info=Harmony.GetPatchInfo(target);
+                if(info==null) return;
+                var entries=info.Postfixes.Select(x=>x.owner+":"+x.priority).ToArray();
+                log?.LogInfo("[GigaPMC] P204_HARMONY_POSTFIX_OWNERS|"+label+
+                    "|"+string.Join(",",entries));
+            }
+            catch(Exception ex)
+            { log?.LogWarning("[GigaPMC] P204_HARMONY_AUDIT_UNAVAILABLE|"+
+                label+"|"+ex.GetType().Name); }
+        }
         internal static void Require(MethodBase target,string owner,string callback,string kind)
         {
             if (target == null || string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(callback))

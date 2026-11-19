@@ -23,7 +23,7 @@ public record ModMetadata : IModMetadata
     public string Name { get; init; } = "GigaPMC - For Tarkov Enjoyers";
     public string Author { get; init; } = "Vargor / OptimisticSociopath";
     public List<string>? Contributors { get; init; }
-    public SemanticVersioning.Version Version { get; init; } = new("2.0.0");
+    public SemanticVersioning.Version Version { get; init; } = new("2.0.1");
     public SemanticVersioning.Range SptVersion { get; init; } = new("~4.1.6");
     public List<string>? Incompatibilities { get; init; }
     public Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }
@@ -43,12 +43,12 @@ public sealed class ServerEntry(ISptLogger<ServerEntry> log, PlayerProfileHealth
         {
             patch.Enable();
             var fika = FikaRules.IsFikaBackend(AppContext.BaseDirectory);
-            if (!fika)
-            {
-                try { LevelCapCache.Publish(AppContext.BaseDirectory, profileHelper.GetMaxLevel()); }
-                catch (Exception capError) {
-                    Console.WriteLine("[GigaPMC] Client raid level-cap cache unavailable: " + capError.Message);
-                }
+            // Publish the real shared SPT experience cap for same-machine Fika
+            // menu HP preview as well. Remote clients never assume this local
+            // cache corresponds to their remote backend.
+            try { LevelCapCache.Publish(AppContext.BaseDirectory, profileHelper.GetMaxLevel()); }
+            catch (Exception capError) {
+                Console.WriteLine("[GigaPMC] Client raid level-cap cache unavailable: " + capError.Message);
             }
             log.Success(fika
                 ? "[GigaPMC] Fika backend detected: per-PMC HP active; settings are server-authoritative (config/fika-server-settings.json, or defaults)."
@@ -135,10 +135,13 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
         // Older profiles may have a null PrestigeLevel before the first prestige.
         // Null means zero, but malformed non-null prestige values fail closed.
         var level = (int)NeedDouble(Read(info, "Level"), "Info.Level");
-        var prestige = FikaRules.ReadPrestige(Read(info, "PrestigeLevel"));
+        var prestige = FikaRules.ReadPrestige(Read(profile, "PrestigeLevel") ?? Read(info, "PrestigeLevel"));
         if (level < 1 || prestige < 0 || level > 10000 || prestige > 10000) return;
 
         var settings = LoadSettings();
+        // 2.0.1: OFF is truly non-mutating. We cannot safely infer the ownership
+        // of HP already persisted by other mods or previous GigaPMC versions.
+        if (!settings.Enabled) return;
         // Use the live server's XP progression table via ProfileHelper.GetMaxLevel().
         // No hardcoded 79 when a progression mod extends the game level cap.
         int? detectedGameMax = null;
@@ -180,7 +183,7 @@ public sealed class PlayerProfileHealthPatch : AbstractPatch
             double oldMax = NeedDouble(maxProp.GetValue(partHealth), Parts[i] + ".Maximum");
             double oldCurrent = NeedDouble(currentProp.GetValue(partHealth), Parts[i] + ".Current");
             if (oldMax <= 0 || oldCurrent < 0 || oldCurrent > oldMax || oldMax > 200000) return;
-            long bonus = settings.Enabled ? VitalityMath.BonusForPart(level, prestige, settings, maxLevel, Parts[i]) : 0;
+            long bonus = VitalityMath.BonusForPart(level, prestige, settings, maxLevel, Parts[i]);
             if (bonus < 0 || bonus > 200000) return; // No partial body-part writes.
             var newMax = BaseHp[i] + bonus;
             if (newMax > 200000) return;

@@ -15,7 +15,7 @@ namespace GigaPMC.Client
     // animation-speed, early ApplyMotion or Transform-position patches.
     internal static class CharacterMovementBridge
     {
-        internal const string Build = "2.0.0";
+        internal const string Build = "2.0.1-REL"; // runtime build fingerprint, NOT plugin semantic version
         private const string Id = "com.vargor.gigapmc.p51.controller";
         private static Harmony harmony;
         private static ManualLogSource log;
@@ -57,6 +57,23 @@ namespace GigaPMC.Client
                     m.GetParameters().Select(p=>p.ParameterType).SequenceEqual(args)).ToArray();
             if(matches.Length!=1) throw new MissingMethodException(t.FullName+"."+name);
             return matches[0];
+        }
+        // Inherited methods may have different reflection wrapper objects when
+        // observed through the concrete Fika context. MethodInfo reference/
+        // operator equality is not a reliable test of implementation identity
+        // on Unity's Mono runtime. Compare the actual metadata and signature.
+        // A genuine override remains blocked: it has another declaring type
+        // and metadata token, and must be audited separately before enabling.
+        private static bool SameDirectImplementation(MethodInfo native,MethodInfo runtime)
+        {
+            if(native==null || runtime==null ||
+               native.DeclaringType!=runtime.DeclaringType ||
+               native.Module.ModuleVersionId!=runtime.Module.ModuleVersionId ||
+               native.MetadataToken!=runtime.MetadataToken ||
+               native.ReturnType!=runtime.ReturnType) return false;
+            var a=native.GetParameters(); var b=runtime.GetParameters();
+            return a.Length==b.Length &&
+                a.Select(p=>p.ParameterType).SequenceEqual(b.Select(p=>p.ParameterType));
         }
         private static Func<T> Bound<T>(object target,string property)
         {
@@ -115,8 +132,14 @@ namespace GigaPMC.Client
                 if(cc==null || cc.GetType()!=simple)
                     throw new InvalidOperationException("UNSUPPORTED_CONTROLLER|"+(cc?.GetType().FullName??"NULL"));
                 var direct=Method(ctx,"DirectApplyMotion",typeof(void),typeof(Vector3),typeof(float));
-                if(Method(movement.GetType(),"DirectApplyMotion",typeof(void),typeof(Vector3),typeof(float))!=direct)
-                    throw new InvalidOperationException("DIRECT_APPLY_OVERRIDE_UNAUDITED");
+                var runtimeDirect=Method(movement.GetType(),"DirectApplyMotion",typeof(void),typeof(Vector3),typeof(float));
+                if(!SameDirectImplementation(direct,runtimeDirect))
+                    throw new InvalidOperationException("DIRECT_APPLY_IMPLEMENTATION_DIFFERENT|NATIVE="+
+                        direct.DeclaringType.FullName+"|RUNTIME="+runtimeDirect.DeclaringType.FullName);
+                log.LogInfo("[GigaPMC] MOVEMENT_DIRECT_BIND_VERIFIED|CONTEXT="+
+                    movement.GetType().FullName+"|DECLARING_TYPE="+runtimeDirect.DeclaringType.FullName+
+                    "|MODULE="+runtimeDirect.Module.Name+"|TOKEN="+runtimeDirect.MetadataToken+
+                    "|NO_UNAUDITED_OVERRIDE");
                 moveMethod=Method(iface,"Move",typeof(CollisionFlags),typeof(Vector3),typeof(float));
                 velocityMethod=Method(playerType,"get_Velocity",typeof(Vector3));
                 var visual=Method(playerType,"VisualPass",typeof(void));
@@ -169,8 +192,12 @@ namespace GigaPMC.Client
                 foreach(var method in new[]{direct,visual,ccMove,check}) Audit(method);
                 player=localPlayer; context=movement; controller=cc;
                 harmony=new Harmony(Id);
-                harmony.Patch(visual,transpiler:new HarmonyMethod(typeof(CharacterMovementBridge),nameof(VisualTranspiler)));
-                harmony.Patch(direct,transpiler:new HarmonyMethod(typeof(CharacterMovementBridge),nameof(MoveTranspiler)));
+                var lateVisual=new HarmonyMethod(typeof(CharacterMovementBridge),nameof(VisualTranspiler));
+                var lateMotion=new HarmonyMethod(typeof(CharacterMovementBridge),nameof(MoveTranspiler));
+                lateVisual.priority=Priority.Last;
+                lateMotion.priority=Priority.Last;
+                harmony.Patch(visual,transpiler:lateVisual);
+                harmony.Patch(direct,transpiler:lateMotion);
                 HarmonyAudit.Require(visual,Id,nameof(VisualTranspiler),"transpiler");
                 HarmonyAudit.Require(direct,Id,nameof(MoveTranspiler),"transpiler");
                 foreach(var method in new[]{direct,visual}) Audit(method);

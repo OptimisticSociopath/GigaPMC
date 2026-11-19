@@ -36,6 +36,8 @@ namespace GigaPMC.Client
         private static StaminaNativeRefresh.Lease p46Lease;
         private static bool permanentlyBlocked, warned, appliedLogged;
 
+        internal static bool NeedsNativeRetry => owner!=null && owner.P26StaminaTrialEnabled &&
+            delta<=0f && !permanentlyBlocked;
         private static void Status(string value) => logger?.LogInfo("[GigaPMC] P26_" + value);
         private static void Block(string why)
         {
@@ -90,6 +92,7 @@ namespace GigaPMC.Client
                 patch.Patch(target, postfix: method);
                 HarmonyAudit.Require(target,"com.vargor.gigapmc.p26.experimental.stamina",
                     nameof(AfterNativeStamina),"postfix");
+                HarmonyAudit.ReportPostfixOwners(target,"STAMINA",logger);
                 Status("P38_LIVE_ABI_STAMINA|RUNTIME_TOKEN="+target.MetadataToken.ToString("X8")+"|UNIQUE_SIGNATURE");
                 Status("P36_HARMONY_OWNER_REGISTERED|TOKEN=060034C8|ID=body-stamina");
                 Status("STAMINA_ARMED|WAIT_FOR_LOCAL_PMC_AND_THREE_SAMPLES|NO_HP_MUTATION");
@@ -135,13 +138,7 @@ namespace GigaPMC.Client
                 throw new InvalidDataException("INVALID_PROFILE_LEVEL");
             return checked((int)d);
         }
-        // Server experience-table cap is stable for this game process.
-        // Never read a file on each half-second raid sample (anti-virus I/O stall).
-        private static readonly Lazy<int?> P40CachedServerCap = new Lazy<int?>(() =>
-        { string path = Path.Combine(Paths.GameRootPath,"SPT_Runtime","user","mods","GigaPMC","config","server-level-cap.txt");
-            int value;
-            return File.Exists(path) && int.TryParse(File.ReadAllText(path).Trim(),out value) ? (int?)value : null; });
-        private static int? Cap() => P40CachedServerCap.Value;
+        private static int? Cap() => ServerLevelCapCache.Read();
         private static void Sample()
         {
             object world, player, profile, physical;
@@ -151,9 +148,9 @@ namespace GigaPMC.Client
             int level=Whole(Read(info,"Level"),1,10000);
             object prestigeValue=Read(profile,"PrestigeLevel") ?? Read(info,"PrestigeLevel");
             int prestige=prestigeValue==null?0:Whole(prestigeValue,0,10000);
-            int cap=owner.CurrentRaidSettings().ResolveCap(Cap());
-            decimal percent=owner.P09BonusRates(AttributeBonusKind.BodyStamina)
-                .TotalPercent(owner.P09GlobalEnabled,level,prestige,cap);
+            var rates=owner.P09BonusRates(AttributeBonusKind.BodyStamina);
+            int cap=AttributeCapPolicy.Resolve(owner.CurrentRaidSettings(),Cap(),rates);
+            decimal percent=rates.TotalPercent(owner.P09GlobalEnabled,level,prestige,cap);
             if(percent<=0m || percent>100000m) { ResetSession(); return; }
             lock(Gate)
             {

@@ -68,14 +68,18 @@ namespace GigaPMC.Client
 
         public decimal TotalPercent(bool globalEnabled, int pmcLevel, int prestige, int detectedMaxLevel)
         {
+            // 0 means "unknown cap" and is permitted only if the active rate
+            // has no At-Max component. Prestige and per-level are independent.
+            bool capRequired=globalEnabled && Enabled && AtMaxLevelEnabled && AtMaxLevelPercent>0m;
             if (!IsValid() || pmcLevel < 1 || pmcLevel > 10000 || prestige < 0 ||
-                prestige > 10000 || detectedMaxLevel < 1 || detectedMaxLevel > 1000)
+                prestige > 10000 || detectedMaxLevel < 0 || detectedMaxLevel > 1000 ||
+                (capRequired && detectedMaxLevel == 0))
                 throw new ArgumentOutOfRangeException("PMC level, prestige, cap or rates invalid");
             if (!globalEnabled || !Enabled) return 0m;
             decimal result = 0m;
             if (PerLevelEnabled) result += (pmcLevel - 1) * PerLevelPercent;
             if (EveryTenEnabled) result += (pmcLevel / 10) * EveryTenPercent;
-            if (AtMaxLevelEnabled && pmcLevel >= detectedMaxLevel) result += AtMaxLevelPercent;
+            if (AtMaxLevelEnabled && AtMaxLevelPercent>0m && detectedMaxLevel>0 && pmcLevel >= detectedMaxLevel) result += AtMaxLevelPercent;
             if (PrestigeEnabled) result += PrestigePercent(prestige);
             return result;
         }

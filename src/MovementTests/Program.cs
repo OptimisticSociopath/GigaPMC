@@ -123,6 +123,21 @@ Check(resolved.IsAbstract,"INTERFACE_ABI_WITHOUT_METHOD_BODY_ACCEPTED");
 resolved=(MethodInfo)methodResolver.Invoke(null,new object[]{typeof(DerivedMover),"Move",typeof(CollisionFlags),new[]{typeof(Vector3),typeof(float)}});
 Check(resolved.DeclaringType==typeof(BaseMover),"INHERITED_CONTEXT_DISPATCH_RESOLVED");
 
+// P07 regression: Fika-style subclass inherits native DirectApplyMotion;
+// only a genuinely different override must be rejected.
+var identical=bridge.GetMethod("SameDirectImplementation",BindingFlags.NonPublic|BindingFlags.Static)
+    .CreateDelegate<Func<MethodInfo,MethodInfo,bool>>();
+var baseDirect=(MethodInfo)methodResolver.Invoke(null,new object[]{typeof(NativeMovementContext),
+    "DirectApplyMotion",typeof(void),new[]{typeof(Vector3),typeof(float)}});
+var inheritedDirect=(MethodInfo)methodResolver.Invoke(null,new object[]{typeof(FikaInheritedMovementContext),
+    "DirectApplyMotion",typeof(void),new[]{typeof(Vector3),typeof(float)}});
+var overriddenDirect=(MethodInfo)methodResolver.Invoke(null,new object[]{typeof(GenuineOverrideMovementContext),
+    "DirectApplyMotion",typeof(void),new[]{typeof(Vector3),typeof(float)}});
+Check(identical(baseDirect,inheritedDirect)&&baseDirect.DeclaringType==inheritedDirect.DeclaringType,
+    "P07_FIKA_INHERITED_DIRECT_APPLY_ACCEPTED_BY_METADATA_IDENTITY");
+Check(!identical(baseDirect,overriddenDirect)&&baseDirect.DeclaringType!=overriddenDirect.DeclaringType,
+    "P07_GENUINE_DIRECT_APPLY_OVERRIDE_REMAINS_BLOCKED");
+
 // Reproduce the condition R1 missed: EFT detects support with its raycast,
 // while the last solver penetration contact is false on a flat surface.
 Setup();
@@ -251,3 +266,7 @@ static class Targets
     public static void ProcessEffectors(){}
 }
 
+
+class NativeMovementContext {public virtual void DirectApplyMotion(Vector3 m,float dt) {}}
+class FikaInheritedMovementContext:NativeMovementContext {}
+class GenuineOverrideMovementContext:NativeMovementContext {public override void DirectApplyMotion(Vector3 m,float dt) {}}

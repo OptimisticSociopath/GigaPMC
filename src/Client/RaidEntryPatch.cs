@@ -47,7 +47,9 @@ namespace GigaPMC.Client
                 }
                 harmony = new Harmony("com.vargor.gigapmc.raidentry");
                 MethodInfo prefix = typeof(RaidEntryPatch).GetMethod("Prefix", BindingFlags.NonPublic | BindingFlags.Static);
-                harmony.Patch(methods[0], prefix: new HarmonyMethod(prefix));
+                var after=new HarmonyMethod(typeof(RaidEntryPatch),nameof(AfterPlayerInit));
+                after.priority=Priority.Last;
+                harmony.Patch(methods[0], prefix: new HarmonyMethod(prefix),postfix:after);
                 logger.LogInfo("[GigaPMC] RAID_ENTRY_PATCH_ARMED|" + methods[0]);
             }
             catch (Exception ex)
@@ -55,6 +57,11 @@ namespace GigaPMC.Client
                 try { harmony?.UnpatchSelf(); } catch { }
                 logger.LogError("[GigaPMC] RAID_ENTRY_UNAVAILABLE|" + ex.GetType().Name + ": " + ex.Message);
             }
+        }
+
+        private static void AfterPlayerInit(object __instance)
+        {
+            RaidLifecycleHook.OnPlayerInitReturned(__instance);
         }
 
         private static bool IsExplicitLocalFlag(ParameterInfo p)
@@ -124,15 +131,17 @@ namespace GigaPMC.Client
         {
             var info = Read(profile, "Info");
             if (info == null) return;
-            string side = Read(info, "Side")?.ToString();
+            string side = (Read(profile,"Side") ?? Read(info,"Side"))?.ToString();
             if (!string.Equals(side, "Bear", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(side, "Usec", StringComparison.OrdinalIgnoreCase)) return;
             int level = ReadWhole(Read(info, "Level"), "PMC level");
-            int prest = Read(info, "PrestigeLevel") == null ? 0 :
-                ReadWhole(Read(info, "PrestigeLevel"), "prestige");
+            object prestigeValue=Read(profile,"PrestigeLevel") ?? Read(info,"PrestigeLevel");
+            int prest=prestigeValue==null ? 0 : ReadWhole(prestigeValue,"prestige");
             if (level < 1) return;
             RaidHpSettings settings = owner.CurrentRaidSettings();
             if (!settings.IsValid()) throw new InvalidDataException("F12 settings invalid");
+            // Avoid changing the current or maximum HP when GigaPMC is disabled.
+            if (!settings.Enabled) { log?.LogInfo("[GigaPMC] RAID_ENTRY_HP_OFF_UNCHANGED"); return; }
 
             int? cap = null;
             if (settings.AutoCap)
@@ -170,7 +179,7 @@ namespace GigaPMC.Client
                 double oldMax = Finite(origMax), oldCur = Finite(origCur);
                 if (oldMax <= 0 || oldMax > 200000 || oldCur < 0 || oldCur > oldMax)
                     throw new InvalidDataException(name + " HP invalid");
-                double desiredMax = Base[i] + (settings.Enabled ? settings.Bonus(level, prest, maxLevel, name) : 0);
+                double desiredMax = Base[i] + settings.Bonus(level, prest, maxLevel, name);
                 if (desiredMax <= 0 || desiredMax > 200000) throw new InvalidDataException(name + " desired HP invalid");
                 double desiredCur = oldCur <= 0 ? 0 :
                     (desiredMax < oldMax ? Math.Max(0, Math.Min(desiredMax, desiredMax * oldCur / oldMax)) :

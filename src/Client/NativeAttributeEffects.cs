@@ -29,11 +29,15 @@ namespace GigaPMC.Client
         private const string MeleeId = "com.vargor.gigapmc.p36.melee";
         private const string FallGuardId = "com.vargor.gigapmc.p50r2.movement-impact-protection";
         private static MethodInfo handsProcess, movementGetter, meleeProcess, sprintAccelerationMethod, walkTargetMethod;
+        private static bool movementGetterWarned;
         // R2: target follows the 4.1.x managed movement state pathway.
         private static FieldInfo staminaCurrent;
         private static object localPlayer, localProfile, localHands, localMovement;
         private static readonly decimal[] percents = new decimal[7];
         private static bool blocked, warnedAds, warnedMovement, loggedElite;
+        // One broken bonus calculation must not invalidate the others.
+        // Captured rates still come exclusively from the immutable raid lease.
+        private static bool p201RateRetryNeeded;
         private static readonly bool[] loggedMovementKinds = new bool[7];
         private static int appliedAds, appliedMelee;
         private static int p44LoggedMovementEndpoints;
@@ -63,6 +67,10 @@ namespace GigaPMC.Client
         private static int previousLevel,previousPrestige;
         private static string previousEndpointReadiness;
 
+        internal static bool NeedsNativeRetry => owner!=null && owner.P27EffectsTrialEnabled &&
+            !blocked && (localPlayer==null || p201RateRetryNeeded ||
+            (localHands==null && !adsBlocked) ||
+            (localMovement==null && !movementBlocked));
         private static void Log(string message) => log?.LogInfo("[GigaPMC] P27_" + message);
         // No Update-driven sampling. Called once immediately after F12 lease
         // capture for this PMC. Missing endpoints stay safely disabled.
@@ -70,22 +78,42 @@ namespace GigaPMC.Client
         {
             owner=plugin;log=logger;
             if(plugin==null || !plugin.P27EffectsTrialEnabled || blocked) return;
-            if((!adsBlocked && adsHarmony==null) ||
-               (!meleeBlocked && meleeHarmony==null) ||
-               (!movementBlocked && movementHarmony==null) ||
-               (!walkClampBlocked && walkClampHarmony==null) ||
-               (!p50WalkMotionBlocked && walkMotionHarmony==null) ||
-               (!sprintLimitBlocked && sprintLimitHarmony==null) ||
-               (!p50FallGuardBlocked && fallGuardHarmony==null)) InstallIndependent();
-            if(blocked) return;
             try
             {
+                if((!adsBlocked && adsHarmony==null) ||
+                   (!meleeBlocked && meleeHarmony==null) ||
+                   (!movementBlocked && movementHarmony==null) ||
+                   (!walkClampBlocked && walkClampHarmony==null) ||
+                   (!p50WalkMotionBlocked && walkMotionHarmony==null) ||
+                   (!sprintLimitBlocked && sprintLimitHarmony==null) ||
+                   (!p50FallGuardBlocked && fallGuardHarmony==null)) InstallIndependent();
+                if(blocked) return;
                 SampleProfile();
-                // P51 owns movement exclusively. Identity and percent come from
-                // the same validated local-PMC, raid-frozen snapshot as before.
-                CharacterMovementBridge.Arm(localPlayer,localMovement,percents[2],log,
-                    owner.RaidJumpScalingEnabled,owner.RaidJumpScalingStrength);
-                Log("P40_R2_EFFECT_PERCENT_FROZEN_ONCE|F12_LEASE|NO_PERIODIC_RESAMPLE");
+                if(localPlayer==null)
+                {
+                    Log("P201_OTHER_EFFECTS_PENDING|LOCAL_PMC_NOT_READY|NO_FALSE_APPLIED");
+                    return;
+                }
+                // P51 movement bridge is independent: an exception there must
+                // not erase successfully sampled ADS and melee percentages.
+                if(localMovement!=null && !movementBlocked)
+                {
+                    try
+                    {
+                        CharacterMovementBridge.Arm(localPlayer,localMovement,percents[2],log,
+                            owner.RaidJumpScalingEnabled,owner.RaidJumpScalingStrength);
+                    }
+                    catch(Exception ex)
+                    {
+                        try { CharacterMovementBridge.Disarm(); } catch { }
+                        Log("P201_MOVEMENT_BRIDGE_FAILED|"+ex.GetType().Name+
+                            "|ADS_MELEE_SNAPSHOTS_PRESERVED");
+                    }
+                }
+                Log("P201_EFFECT_PERCENT_CAPTURED|F12_LEASE|ADS="+percents[0]+
+                    "|MELEE="+percents[1]+"|MOVEMENT="+percents[2]+
+                    "|RATE_RETRY_PENDING="+p201RateRetryNeeded+
+                    "|NOT_NATIVE_APPLICATION_PROOF");
             }
             catch(Exception ex)
             {
@@ -116,8 +144,23 @@ namespace GigaPMC.Client
             if (!meleeBlocked && meleeHarmony == null) InstallMelee();
             if (!p50FallGuardBlocked && fallGuardHarmony == null) InstallFallGuard();
             // Resolve for SampleProfile's identity check, without patching a getter.
-            movementGetter=UniqueMethodContract.Resolve(UniqueEft("EFT.MovementContext"),
-                "get_ClampedSpeed",typeof(float));
+            try
+            {
+                movementGetter=UniqueMethodContract.Resolve(UniqueEft("EFT.MovementContext"),
+                    "get_ClampedSpeed",typeof(float));
+            }
+            catch(Exception ex)
+            {
+                // Movement unavailable must not prevent ADS/Melee snapshots.
+                movementGetter=null;
+                // Do not make temporary readiness failures permanent. Attempts
+                // are bounded by the native raid lifecycle (never Update).
+                if(!movementGetterWarned)
+                {
+                    movementGetterWarned=true;
+                    Log("P201_MOVEMENT_GETTER_UNAVAILABLE|"+ex.GetType().Name+"|ADS_MELEE_INDEPENDENT");
+                }
+            }
         }
         private static void InstallAds()
         {
@@ -167,8 +210,9 @@ namespace GigaPMC.Client
                 if(damage==null || damage.FieldType!=typeof(float))
                     throw new MissingFieldException("MELEE_DAMAGE_FIELD_ABI_DRIFT");
                 attempt = new Harmony(MeleeId);
-                attempt.Patch(meleeProcess,
-                    transpiler:new HarmonyMethod(typeof(NativeAttributeEffects),nameof(MeleeTranspiler)));
+                var lateMelee=new HarmonyMethod(typeof(NativeAttributeEffects),nameof(MeleeTranspiler));
+                lateMelee.priority=Priority.Last;
+                attempt.Patch(meleeProcess,transpiler:lateMelee);
                 HarmonyAudit.Require(meleeProcess,MeleeId,nameof(MeleeTranspiler),"transpiler");
                 meleeHarmony=attempt;
                 Log("P38_LIVE_ABI_MELEE|TOKEN="+meleeProcess.MetadataToken.ToString("X8")+"|IL_ANCHOR_VERIFIED");
@@ -284,16 +328,7 @@ namespace GigaPMC.Client
 
         private static object Read(object source,string key)
             => source==null ? null : AttributeMemberReader.Read(source,key);
-        // Server experience-table cap is stable for this game process.
-        // Never read a file on each half-second raid sample (anti-virus I/O stall).
-        private static readonly Lazy<int?> P40CachedServerCap = new Lazy<int?>(() =>
-        { var file = Path.Combine(Paths.GameRootPath,"SPT_Runtime","user","mods",
-                "GigaPMC","config","server-level-cap.txt");
-            if (!File.Exists(file)) return null;
-            int cap;
-            return int.TryParse(File.ReadAllText(file).Trim(),out cap) && cap>=1 && cap<=1000
-                ? (int?)cap : null; });
-        private static int? ReadServerLevelCap() => P40CachedServerCap.Value;
+        private static int? ReadServerLevelCap() => ServerLevelCapCache.Read();
         private static void SampleProfile()
         {
             var world=RaidLifecycleHook.CurrentWorld;
@@ -329,17 +364,35 @@ namespace GigaPMC.Client
             object prestigeObject=Read(profile,"PrestigeLevel")??Read(info,"PrestigeLevel");
             int level=checked(Convert.ToInt32(levelObject));
             int prestige=prestigeObject==null?0:checked(Convert.ToInt32(prestigeObject));
-            int cap=owner.CurrentRaidSettings().ResolveCap(ReadServerLevelCap());
-            if(level<1 || level>10000 || prestige<0 || prestige>10000 || cap<1 || cap>1000)
+            if(level<1 || level>10000 || prestige<0 || prestige>10000)
             { ClearSample(); return; }
+            // Each rate has its own cap policy and failure boundary. For
+            // example, malformed ADS configuration must not suppress melee.
+            // The server cap is read once on this authenticated native event.
+            var hpSettings=owner.CurrentRaidSettings();
+            int? detectedCap=ReadServerLevelCap();
             var kinds=new[]{AttributeBonusKind.AdsEndurance,
                 AttributeBonusKind.MeleeDamage,AttributeBonusKind.SprintSpeed};
             var computed=new decimal[7]; // legacy native-hook offsets
+            bool retryRate=false;
             for(int i=0;i<3;i++)
             {
-                computed[i]=owner.P09BonusRates(kinds[i]).TotalPercent(
-                    owner.P09GlobalEnabled,level,prestige,cap);
-                if(computed[i]<0 || computed[i]>10000) { ClearSample();return; }
+                try
+                {
+                    var rate=owner.P09BonusRates(kinds[i]);
+                    int cap=AttributeCapPolicy.Resolve(hpSettings,detectedCap,rate);
+                    decimal value=rate.TotalPercent(owner.P09GlobalEnabled,level,prestige,cap);
+                    if(value<0m || value>10000m)
+                        throw new InvalidDataException("P201_PERCENT_OUT_OF_RANGE");
+                    computed[i]=value;
+                }
+                catch(Exception ex)
+                {
+                    retryRate=true;
+                    computed[i]=0m; // Fail closed for this effect only.
+                    Log("P201_RATE_UNAVAILABLE|KIND="+kinds[i]+"|"+
+                        ex.GetType().Name+"|OTHER_EFFECTS_CONTINUE");
+                }
             }
             for(int i=3;i<7;i++) computed[i]=computed[2];
             bool drift=!ReferenceEquals(previousProfile,profile) ||
@@ -347,6 +400,7 @@ namespace GigaPMC.Client
             previousProfile=profile;
             previousLevel=level;previousPrestige=prestige;
             localPlayer=player;localProfile=profile;localHands=hands;localMovement=movement;
+            p201RateRetryNeeded=retryRate;
             Array.Copy(computed,percents,7);
             string readiness="ADS="+(hands!=null?"NATIVE_OBJECT":"NOT_RESOLVED")+
                 "|MOVEMENT="+(movement!=null?"NATIVE_OBJECT":"NOT_RESOLVED")+
@@ -364,6 +418,7 @@ namespace GigaPMC.Client
             CharacterMovementBridge.Disarm();
             localPlayer=localProfile=localHands=localMovement=null;
             previousProfile=null;
+            p201RateRetryNeeded=false;
             Array.Clear(percents,0,7);
         }
         private static void Disarm()

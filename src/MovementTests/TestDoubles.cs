@@ -47,7 +47,18 @@ namespace HarmonyLib
         public CodeInstruction(OpCode code,object operand=null){opcode=code;this.operand=operand;}
         public bool Calls(MethodInfo m)=>(opcode==OpCodes.Call||opcode==OpCodes.Callvirt)&&Equals(operand,m);
     }
-    public class HarmonyMethod {public HarmonyMethod(Type t,string n){} }
+    // Test-only Harmony ABI: mirror the priority members used by the real
+    // HarmonyMethod in production. Harmony Priority.Last is zero.
+    public static class Priority
+    {
+        public const int Normal = 400;
+        public const int Last = 0;
+    }
+    public class HarmonyMethod
+    {
+        public int priority = Priority.Normal;
+        public HarmonyMethod(Type t, string n) {}
+    }
     public class Patch {public string owner;public MethodInfo PatchMethod;public int priority;}
     public class Patches
     {

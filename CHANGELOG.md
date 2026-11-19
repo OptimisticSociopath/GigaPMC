@@ -1,10 +1,15 @@
-# Changelog
+# GigaPMC changelog
+
+## 2.0.1
+
+- Fika host: full F12 management of seven-part shared HP, milestone, Prestige and level-cap settings, with server JSON readback and `.bak` backups.
+- Host-only shared HP editor is now **Enabled by default** on a verified local SPT/Fika backend. Remote clients remain read-only.
+- DEV VISION is **Disabled by default**; existing manually saved BepInEx overrides are preserved until reset.
+- Local PMC attributes remain individually configurable: carrying weight, stamina, movement speed, ADS endurance and melee damage.
+- Preserves the verified movement-binding implementation, controlled collision motion and horizontal jump scaling, as well as all HP and bonus calculations.
+- The complete Windows build now forces a clean rebuild, verifies regressions and package content, and copies the release ZIP to Downloads.
+- Consolidated the public source archive: removed old patch-stage notes; retained functional regression tests, ABI checks and stable diagnostic IDs.
 
 ## 2.0.0
 
-- Your PMC get bonuses to carry weight, stamina, ADS usage, melee damage and moving speed per character level! By default you get 1% per lvl to carry weight, stamina, ADS usage, melee damage and 0,25% to moving speed. Everything can be changed or disabled in F12.
-- Milestone and Prestige bonuses for carry weight, stamina, ADS usage, melee damage and moving speed are included and their bonuses can be adjusted in f12
-- Jump Distance: enable jump scaling and choose a strength from 0% to 100%. Defaults: enabled, 100%. A movement bonus of +100% with jump strength 50% produces a horizontal jump multiplier of 1.5. Jump height and gravity inputs remain native. Settings apply next raid.
-- Per-level HP defaults: head 1, each arm 2, each leg 3, stomach 4, thorax 5. Milestone/prestige and other bonus defaults are unchanged. Existing saved values are preserved; reset only the seven body-part entries to adopt the new defaults.
-- Give the client plugin, client assembly and server metadata version 2.0.0.
-
+- Introduced local PMC attribute bonuses, HP growth and bonuses by level, milestone and Prestige, F12 configuration and menu readouts.

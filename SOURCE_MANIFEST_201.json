@@ -1,0 +1,528 @@
+{
+  "kind": "SOURCE_ONLY",
+  "release": "2.0.1",
+  "candidate": "RELEASE",
+  "provenance": "based on user-verified Windows P09 source; client DLL release changes limited to host HP default and fixed-length build labels",
+  "files": [
+    {
+      "path": ".gitignore",
+      "size": 127,
+      "sha256": "7713FBDB850CE0C39C54754E3CCD820F5387599944EE9D3E6B288BD7E42D143E"
+    },
+    {
+      "path": "BUILD.ps1",
+      "size": 14369,
+      "sha256": "7ACEFB60E5DD09C9EBA503CCED0CC83685E2F5B9A01377AE927E858881676044"
+    },
+    {
+      "path": "BUILD_WINDOWS.cmd",
+      "size": 4955,
+      "sha256": "AFC1B8774C376FA2EF88B6BF493C783F2B2D16899B178F058DE6FFDA6020C597"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "size": 1142,
+      "sha256": "18246C2EB89F316CF59203CAFADEDDC0736A8641894D4200A546349F278DF71E"
+    },
+    {
+      "path": "GAME_REFERENCES_SHA256.csv",
+      "size": 1581,
+      "sha256": "D6BDAB5C32F5E3D14F895A173A152A93EF4181D48400B44E1CCD104DED485FD4"
+    },
+    {
+      "path": "INSTALL_README.txt",
+      "size": 1131,
+      "sha256": "9569063E383D2C7068A9D03D59A1D6BA7D6339F78593D4F9B66FCE15903D7B85"
+    },
+    {
+      "path": "LICENSE",
+      "size": 1076,
+      "sha256": "31A737B03F203881065D49FB52D70F6CFD9AB85428D69893D088E9D1EDD43DFE"
+    },
+    {
+      "path": "README.md",
+      "size": 3874,
+      "sha256": "7F040B9911960D6B2929BCCBBAE3926C68CC6A46E8CE5D25FAE8B2E3631BCDF4"
+    },
+    {
+      "path": "assets/GigaPMC_icon_512.png",
+      "size": 420970,
+      "sha256": "46DD86DA9667AD090FB8BDA4BB1DB9104C30F69F9CE9ECDA2D569146EA969B90"
+    },
+    {
+      "path": "config/defaults.json",
+      "size": 420,
+      "sha256": "857008F93548388D2B2F1EA7714DC0046585050D2C5EEB26F6F55D33A7AAB4FA"
+    },
+    {
+      "path": "config/fika-server-settings.example.json",
+      "size": 420,
+      "sha256": "857008F93548388D2B2F1EA7714DC0046585050D2C5EEB26F6F55D33A7AAB4FA"
+    },
+    {
+      "path": "global.json",
+      "size": 54,
+      "sha256": "BD40CD23211A9FF8224EE13D43181ECCED38567FA5D4F63F62D90B1DE23770DC"
+    },
+    {
+      "path": "src/Client/AirborneMovementPolicy.cs",
+      "size": 1644,
+      "sha256": "9AD92B8265FCBBFC65E153037F908E8D9A5D7142D976D60F0E5D64814D103440"
+    },
+    {
+      "path": "src/Client/AttributeAdditiveContract.cs",
+      "size": 1752,
+      "sha256": "8D54B9D7ECA0F5A3A944A641E4680A57C6B9A9DDC8F12C8601053C99F31A618C"
+    },
+    {
+      "path": "src/Client/AttributeBonusConfig.cs",
+      "size": 9949,
+      "sha256": "EB21E3EF0FEA3DF7407B8AC8186C11D885444E7A74EB4D4FE7EFE6E797FDEA5B"
+    },
+    {
+      "path": "src/Client/AttributeBonusMath.cs",
+      "size": 7028,
+      "sha256": "8E48D75E3CA196011F9ED49B3FA82AC3A6F9CDAC33122C9AC1C21CE8AC78CBAD"
+    },
+    {
+      "path": "src/Client/AttributeBootBoundary.cs",
+      "size": 1497,
+      "sha256": "0A0747EA3C405A6E4D4A80E794C94258704AC6B0DCCF9C5D383194E1EA94CECD"
+    },
+    {
+      "path": "src/Client/AttributeCapPolicy.cs",
+      "size": 928,
+      "sha256": "9E2B594C0A6BE29E071DBE7FC0D93CCECC9D9BC95CBEB919DF5D0D713C9A27F1"
+    },
+    {
+      "path": "src/Client/AttributeCarryMath.cs",
+      "size": 2526,
+      "sha256": "D6B4AB8FC0C0A117D853576F0C158AD6EA485B8401B6DC293B98EE41BA30C4F5"
+    },
+    {
+      "path": "src/Client/AttributeDevVision.cs",
+      "size": 10868,
+      "sha256": "884A05FA732FC7F1B8DA9558E4AFF797BCEE698ADBFCA4149C2C7DDC3C519372"
+    },
+    {
+      "path": "src/Client/AttributeDevVisionText.cs",
+      "size": 5230,
+      "sha256": "D8A3D6EFB39928D85CF7AD538BD2BFE802C04F279EEFBC9F5C7FCED5662DF08A"
+    },
+    {
+      "path": "src/Client/AttributeF12RaidLease.cs",
+      "size": 5359,
+      "sha256": "D73070249A46BE008282E413F1D411FE643E7455E15C1B360265602FDCC6A5B4"
+    },
+    {
+      "path": "src/Client/AttributeFrozenDelta.cs",
+      "size": 1620,
+      "sha256": "32373D395B1342373A8ABF29A7A5EDD45AF4D8822B6E626B0528BBD35CF5C852"
+    },
+    {
+      "path": "src/Client/AttributeGameplayGuards.cs",
+      "size": 2297,
+      "sha256": "4E97AFC2A4E89354211D1C842ED22DD5FE31EE17E0EEDE14189440F50A4C8530"
+    },
+    {
+      "path": "src/Client/AttributeGlobalBonus.cs",
+      "size": 4558,
+      "sha256": "1F2CC79B5D0B8750F033DF2F0FA9F9747C268FD2444F174C20318AA6C798E4D3"
+    },
+    {
+      "path": "src/Client/AttributeMemberReader.cs",
+      "size": 1249,
+      "sha256": "569E3C59F0F90A93B5D9B50BEAC6CD5B3CB6E54CFAEE64E21671C8C497E2DE5F"
+    },
+    {
+      "path": "src/Client/AttributeMenuConfigSource.cs",
+      "size": 2618,
+      "sha256": "691527CA06CB31256FB933179E8CC952FD4783390A5EF5C42F4D12C819C161A6"
+    },
+    {
+      "path": "src/Client/AttributeMenuProjection.cs",
+      "size": 4454,
+      "sha256": "7B61A1EBB07C8C8860676A2C1BDFD5F331469D78F4FDB8820E4844CDA5EE8D84"
+    },
+    {
+      "path": "src/Client/AttributeNativeConfig.cs",
+      "size": 7200,
+      "sha256": "5A45A888A4E57251B9D8D8D8FA1F6E19D049EDC171B9128573CA320F33FDF933"
+    },
+    {
+      "path": "src/Client/AttributeNativeMath.cs",
+      "size": 1843,
+      "sha256": "61B61E9F3C83CEF4AA5FD57AC6D308DA61AEF0CDB76B594017D6EDE2A95FE91B"
+    },
+    {
+      "path": "src/Client/AttributeNativeReadOnly.cs",
+      "size": 4212,
+      "sha256": "AA8CEE5B199EF91AAC3B7A7238285E4CEC7AEAA55BB37B1D71E0B98F19A36AD7"
+    },
+    {
+      "path": "src/Client/AttributePermanentBaselines.cs",
+      "size": 4859,
+      "sha256": "DF5271898983D371D7AC0E0563A8C2491F5F9F38CC010F9F0F22DBD6E414FE46"
+    },
+    {
+      "path": "src/Client/AttributePersistedSkills.cs",
+      "size": 5784,
+      "sha256": "4AE91214ED60E2B373931C78468635D965771777DFC66D1D5DF28AC7F2EBB44F"
+    },
+    {
+      "path": "src/Client/AttributePreRaidAuthority.cs",
+      "size": 3911,
+      "sha256": "FA4CD86C172B5BC01D0E513C773EA2D11FE217060FBFF85DA20F4AC820F085F8"
+    },
+    {
+      "path": "src/Client/AttributeRaidLifecycle.cs",
+      "size": 8456,
+      "sha256": "0F786C6DB4CB4FA81FDCF7B777B03B986F9992F82BB0D153B8CECCF3771F29FE"
+    },
+    {
+      "path": "src/Client/AttributeRaidStability.cs",
+      "size": 1539,
+      "sha256": "11136513E01BD5371B26EFC9A33B819DE58C6392DEA591338B2F14E2A9FF7F43"
+    },
+    {
+      "path": "src/Client/AttributeReadOnlySession.cs",
+      "size": 3559,
+      "sha256": "89C6BA71C2FB05F07BB82651EDFCD76AA1D2D68D0DA66FF56DE4292C7E63FBB2"
+    },
+    {
+      "path": "src/Client/AttributeRuntime.cs",
+      "size": 13816,
+      "sha256": "0E1BB46076EBC441256E61BD96D972FB051DD4880ED38FB65A73A3D123BA860A"
+    },
+    {
+      "path": "src/Client/AttributeStaminaConfig.cs",
+      "size": 4494,
+      "sha256": "B2C00E3B5B5F0A64E92BB25BFCE0DB3C5391D6E38A525967BC2237B2D720210A"
+    },
+    {
+      "path": "src/Client/AttributeStaminaMath.cs",
+      "size": 1460,
+      "sha256": "DC1DB717179425FBB2202E9B1F45775B2B54FECE615E47C7238685B84930CC04"
+    },
+    {
+      "path": "src/Client/AttributeWeightBaseline.cs",
+      "size": 2343,
+      "sha256": "F8CFD8BF76D0A9D028F8596591E4F9302F61C18DEAB18CD6C1C44E3910A83D21"
+    },
+    {
+      "path": "src/Client/CarryCapacityHooks.cs",
+      "size": 22871,
+      "sha256": "6AA10DD3FDAE9D9ACE56BA2B0105A015BDD003017B4B15E0AAF2D15A0EC17BB5"
+    },
+    {
+      "path": "src/Client/CharacterMovementBridge.cs",
+      "size": 21535,
+      "sha256": "C38614C194D35BFB12BFBBA5197EDF3C85CF3A8C26DF936ED3A2C109A29D258B"
+    },
+    {
+      "path": "src/Client/CharacterMovementMath.cs",
+      "size": 1975,
+      "sha256": "0EDD8F42615F0E6DD4A87A405A1326A021C90557C28895341035E6EDB6214F3C"
+    },
+    {
+      "path": "src/Client/FikaHpHostConfig.cs",
+      "size": 8694,
+      "sha256": "F8E2463DA4A1DC476FCAD90F12A98FA6AAB08F70013BF15193716BCEFE3C7CEA"
+    },
+    {
+      "path": "src/Client/FikaLocalBridge.cs",
+      "size": 8864,
+      "sha256": "222950F48122F4AA5C972BC11A7365A925712790D2F7F671B5EA1E4ABA0E1CB4"
+    },
+    {
+      "path": "src/Client/GigaPMC.Client.csproj",
+      "size": 2074,
+      "sha256": "4958316C1AC886EE6F7F79681B93B817DF9FE1246C9CE0E2EAE5F7A0C23025ED"
+    },
+    {
+      "path": "src/Client/HarmonyAudit.cs",
+      "size": 2465,
+      "sha256": "ED9DA54A2548E56009AC86389FA84DCAC0EBF625F331D7FE76E680C28621E0CA"
+    },
+    {
+      "path": "src/Client/HealthModelAccess.cs",
+      "size": 13233,
+      "sha256": "C467AA44B98C73BB7C3AA3F601CCCE194BAEAF0ACE9846E338F0B97249B67E54"
+    },
+    {
+      "path": "src/Client/HideoutStaminaBridge.cs",
+      "size": 8544,
+      "sha256": "9FA1E0F6B1F6395F5D879C8F4ADA87B1D6B71FC9BFB16460BE7F68B54DCDDE94"
+    },
+    {
+      "path": "src/Client/ImpactProtectionMath.cs",
+      "size": 2049,
+      "sha256": "02537699632279FD6A397C62BDF4C85E02D2817F4369C6C33937AFAF85B92730"
+    },
+    {
+      "path": "src/Client/InertiaLimitsMath.cs",
+      "size": 1883,
+      "sha256": "49DD7FBCECB096967C68D191A262ED66497544555C13B0E501F94119374390F4"
+    },
+    {
+      "path": "src/Client/JumpDistanceSettings.cs",
+      "size": 646,
+      "sha256": "F9F24E1943758AF097E4DF47A062FF1197CDB6E6AC451308EA00711DE0BA05C2"
+    },
+    {
+      "path": "src/Client/LegacySettingsReader.cs",
+      "size": 3453,
+      "sha256": "EECFDBA05DB29405186ACE50608769837A5BF83C199D35E52A6402E6BD5E7E8F"
+    },
+    {
+      "path": "src/Client/LiveAbiAudit.cs",
+      "size": 2652,
+      "sha256": "25FD66CCCFAFAA644EC9E02791CB2D68D0E704F1ABE02BC76503C02583A80156"
+    },
+    {
+      "path": "src/Client/LocalPmcGate.cs",
+      "size": 738,
+      "sha256": "87A6218A89D920D68B8AF63AB55DD69E0ED72246CF1A2A9E85E5288344470E16"
+    },
+    {
+      "path": "src/Client/LocalTrialAuthority.cs",
+      "size": 1503,
+      "sha256": "AB24E4BDF7B51734441F78D6701F74EF4C393BBC95B446A4DF6C288DED59E650"
+    },
+    {
+      "path": "src/Client/MeleeIlContract.cs",
+      "size": 999,
+      "sha256": "2C8CF5EEAE5F0D6D4804E1BAAC18ECF0CAD4A0E3CDCF481F31BA7AFFCFA94E1A"
+    },
+    {
+      "path": "src/Client/MenuBonusLive.cs",
+      "size": 3513,
+      "sha256": "B12984145BDB2C3A688A629963DDE3C9729E7A30801EDA6F30A41814E137C21A"
+    },
+    {
+      "path": "src/Client/MenuBonusStatus.cs",
+      "size": 2092,
+      "sha256": "556964A073A91E1121FE5D6B494EE8EEDFA92EE608C67509CA799DE724AF3A29"
+    },
+    {
+      "path": "src/Client/MenuCarryHook.cs",
+      "size": 15395,
+      "sha256": "86698CC7B22A7F392DED31D580F723615CF5FC0008C4C49509D51D818EC7236A"
+    },
+    {
+      "path": "src/Client/MenuCarryMath.cs",
+      "size": 1949,
+      "sha256": "5601B7A450E478500A620F32700F8AECB34D2AB31C295FA4816D8A0BCC4A6347"
+    },
+    {
+      "path": "src/Client/MenuEventBridge.cs",
+      "size": 2506,
+      "sha256": "3B832502F82A55FC9048ACDC87C6E395F38947B31039F628955E7657058D9BC8"
+    },
+    {
+      "path": "src/Client/MenuHealthSync.cs",
+      "size": 23756,
+      "sha256": "DCB70587F206ADA107FEA6F3C29E9DF4F970ED6921213EA353557866C6F3032C"
+    },
+    {
+      "path": "src/Client/MenuIlSelector.cs",
+      "size": 3743,
+      "sha256": "1C99BAF16B2F7825724DF02F1C9E59148B0CB11516D880C693905889E8D7254C"
+    },
+    {
+      "path": "src/Client/MenuStaminaEvidence.cs",
+      "size": 1324,
+      "sha256": "70EDFFD8CCD6DBED2950160798CED5B7022E11A29A651D914882AE66AB62112C"
+    },
+    {
+      "path": "src/Client/MenuWeightProbe.cs",
+      "size": 4651,
+      "sha256": "0FF66C349D6695A235AFE9F7A046F49E61F2465796D4E41B9E0D5C992E85064E"
+    },
+    {
+      "path": "src/Client/MovementEndpointEvidence.cs",
+      "size": 3211,
+      "sha256": "1965F4649F9D4E7EF0A41B006E0B505B1EFC4369D78F7A37CB9F4A0EEE62A603"
+    },
+    {
+      "path": "src/Client/NativeAttributeEffects.cs",
+      "size": 31504,
+      "sha256": "C3886F39D960E989CECE7CC09202C809F401E591A59935E0AA836B6B182A6C8D"
+    },
+    {
+      "path": "src/Client/NativeEvidence.cs",
+      "size": 4046,
+      "sha256": "C2E52F597B1C3C82EA47E5318CA1FE626C93D1F992328BE3F494387BF247862D"
+    },
+    {
+      "path": "src/Client/NativeReadOnlyProbe.cs",
+      "size": 7859,
+      "sha256": "47372C63634BC4C026C8FCBEC50021DC8C5106275BEA234B45EE50EAFD8D916E"
+    },
+    {
+      "path": "src/Client/NativeSpeedMath.cs",
+      "size": 913,
+      "sha256": "E261784F1A2F8ECE07A61266CCF2552FBDF5E9049D9755B32B486D3A6D99157A"
+    },
+    {
+      "path": "src/Client/PercentStepDrawer.cs",
+      "size": 4738,
+      "sha256": "610791DD2EB0CCBD82A1926DB74B283BB600B2AF34451E22187DA09145885A46"
+    },
+    {
+      "path": "src/Client/PercentStepMath.cs",
+      "size": 1904,
+      "sha256": "565EF7502BB2B8050234197B7A6704AA24AD5745B130C43C17F1D5F8955FA5CB"
+    },
+    {
+      "path": "src/Client/Plugin.cs",
+      "size": 53066,
+      "sha256": "752EB005FEC22A7A38DC8AC55578FF35CFA1E2D19A270A1780D97C62FF5EF5AF"
+    },
+    {
+      "path": "src/Client/RaidEntryPatch.cs",
+      "size": 11206,
+      "sha256": "DDC96C7F56236069310631BCA30AAF6ED7B9F1CCC43F676E249D36FDD4A42800"
+    },
+    {
+      "path": "src/Client/RaidHpSettings.cs",
+      "size": 2747,
+      "sha256": "9DA34B21DAC35AC68511C2C441F7BBB381B6801F2F2A8F5EA409337C7CBCAF86"
+    },
+    {
+      "path": "src/Client/RaidLifecycleHook.cs",
+      "size": 12620,
+      "sha256": "52A3EB0BA2081FAE3CD31793329B78429947B82B3C4EC947D9D53915A499BB7B"
+    },
+    {
+      "path": "src/Client/RaidSceneGate.cs",
+      "size": 2072,
+      "sha256": "67926220509884C572F515B5314AF7B5EF3E261236F7D41092A2BDB3A2624C41"
+    },
+    {
+      "path": "src/Client/RaidSceneRules.cs",
+      "size": 1224,
+      "sha256": "454F4FDE3B2531FBD904DAD13FF0D333F08EACE281FDA2DA0F0D76689E6CEB59"
+    },
+    {
+      "path": "src/Client/ServerLevelCapCache.cs",
+      "size": 1841,
+      "sha256": "645F6D8B717029FCF1A3DC86115F704B06E0120DEA8152B84906888C588DB638"
+    },
+    {
+      "path": "src/Client/SprintReadOnlyProbe.cs",
+      "size": 6719,
+      "sha256": "30E723BB9F17277938BE50D042FEEE6874618813666D29CA951C437954A424A9"
+    },
+    {
+      "path": "src/Client/StaminaCapacityHooks.cs",
+      "size": 13552,
+      "sha256": "C0F174DC4F474EFE4AD3E94DE6F362206FACA471F30A3AA6E5FEE5CFA5F3CF34"
+    },
+    {
+      "path": "src/Client/StaminaCapacityMath.cs",
+      "size": 1982,
+      "sha256": "3D27CB5EA4AF1AB80D6B008A46DF9118C556112DCB47DA801ACAE844C10CF615"
+    },
+    {
+      "path": "src/Client/StaminaNativeRefresh.cs",
+      "size": 8077,
+      "sha256": "B0EADEC3693F446B884CBAB0F64D38BA8416B686A374410D1A92286FC26DD874"
+    },
+    {
+      "path": "src/Client/UniqueMethodContract.cs",
+      "size": 1239,
+      "sha256": "CC3055E62276B8800997F1530172645AC7C3DC90255B31F4FC08BD5165A9EC4F"
+    },
+    {
+      "path": "src/Client/VerifiedHudValues.cs",
+      "size": 3899,
+      "sha256": "7D8577E1481C1728BD1514775FB423223A681F47E094073AE1143A40315E2AEB"
+    },
+    {
+      "path": "src/Client/WorldSpeedProbe.cs",
+      "size": 7890,
+      "sha256": "03C89977C108E999B324FF21A46CFED641802A2161661D6B63BC0438AAB0D72F"
+    },
+    {
+      "path": "src/MovementTests/MovementTests.csproj",
+      "size": 686,
+      "sha256": "1A42C365CFA1E02F486366C09E9918F7059C1AC829E3ED522F7C2C3B06FC5A64"
+    },
+    {
+      "path": "src/MovementTests/Program.cs",
+      "size": 17001,
+      "sha256": "DD916F48E0F8B9411EB7C84B881C876D2C3006DD1907E88CC6375910D13E05A6"
+    },
+    {
+      "path": "src/MovementTests/TestDoubles.cs",
+      "size": 3122,
+      "sha256": "08D582B0E0C9B41EC90BD14C4F457DBA4531B4E59566882063323D271C19D291"
+    },
+    {
+      "path": "src/Server/FikaRules.cs",
+      "size": 4396,
+      "sha256": "2B17170F2737FDD5FE8FA5FAA16021ECB2A532F63C607E4ED6D99EDD0D3BC9BF"
+    },
+    {
+      "path": "src/Server/GigaPMC.Server.csproj",
+      "size": 1357,
+      "sha256": "F3114FF1266693EA8344886D22C85B57E64CF3C731700D018898B2388D031CA9"
+    },
+    {
+      "path": "src/Server/Mod.cs",
+      "size": 12473,
+      "sha256": "E19CC9B450E2DEC3892F9C76D77DB967E9D1499F18FB11E10743E4BCD9AD60D5"
+    },
+    {
+      "path": "src/Server/VitalityMath.cs",
+      "size": 3965,
+      "sha256": "1161F3B28F7D9C94B015DB5EE0A41F53DC1697085E72633E73719DFA698A12F3"
+    },
+    {
+      "path": "src/SettingsTests/Program.cs",
+      "size": 9983,
+      "sha256": "73210B6D6FDAF3B117A999530B936FB2B63C4A4E43DF3BC1FB7D7E4A75BD36A1"
+    },
+    {
+      "path": "src/SettingsTests/SettingsTests.csproj",
+      "size": 1004,
+      "sha256": "6EB57F7F92CB7D813A79500D4A96316C8F6A917A62731245B9D824F311D70ABC"
+    },
+    {
+      "path": "tools/GameAbiAudit/GameAbiAudit.csproj",
+      "size": 348,
+      "sha256": "587B4FD4A58E35CBE1CC15F06E5D4498C3E755211F4B13C7B8956F2CD0C31883"
+    },
+    {
+      "path": "tools/GameAbiAudit/Program.cs",
+      "size": 11907,
+      "sha256": "65B9AC3361F4E584F1A80BF0838B0AC88975E0C2D11C5C6928CE52147560D1CE"
+    },
+    {
+      "path": "tools/P201_SOURCE_CHECK.py",
+      "size": 2262,
+      "sha256": "D4D7E3F46FE5A8E6D3FFE020FF46455B8C8D8EAB59E9ACD37FA15B8E462FC6F3"
+    },
+    {
+      "path": "tools/P203_SOURCE_CHECK.py",
+      "size": 2726,
+      "sha256": "C323BCF4A4BA08813257EDA16986A5A995754E57E1EEC959D889419B8DE7B28A"
+    },
+    {
+      "path": "tools/P204_SOURCE_CHECK.py",
+      "size": 2547,
+      "sha256": "FC4AFEDABCF3F180DD23FA59AD9F76BEC5AB3F4358818ADF2FE7612B291969DF"
+    },
+    {
+      "path": "tools/P205_SOURCE_CHECK.py",
+      "size": 1209,
+      "sha256": "0BDC6D04F954408EF2B229AB79BE5147B9010013B042A5CFA75F8251314EF6C6"
+    },
+    {
+      "path": "tools/P206_SOURCE_CHECK.py",
+      "size": 1022,
+      "sha256": "2F96E752F55AC1F0B448FEFA26FFC66FCC109041934C6F6F4D80BC18D3071A06"
+    }
+  ]
+}
